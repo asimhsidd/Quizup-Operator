@@ -23,11 +23,17 @@ Log in with the backend's `ADMIN_TOKEN`; it's exchanged for a short-lived JWT ke
 
 ## Deploy
 
-1. Build with `VITE_BACKEND_URL=https://play.kwiz.live` (a Docker build arg; it's baked in).
-   The Dockerfile serves the static build with nginx on port 80.
-2. On the backend, add this app's origin to `EXTRA_ORIGINS`
-   (e.g. `EXTRA_ORIGINS=https://ops.kwiz.live`). Without that, CORS blocks the API and the
-   socket handshake.
+GitHub Actions (`.github/workflows/build-and-push.yml`) lints, builds and pushes
+`ghcr.io/asimhsidd/quizup-operator:main` on every push to `main`, then pings Coolify, which
+pulls the image. It serves https://operator.kwiz.live from nginx on port 80.
+
+- `VITE_BACKEND_URL` is baked in at build time: a repository variable, defaulting to
+  `https://api.kwiz.live`.
+- The backend must list `https://operator.kwiz.live` in `EXTRA_ORIGINS`, or CORS blocks the
+  API and the socket handshake.
+- Secrets `COOLIFY_WEBHOOK` + `COOLIFY_TOKEN` enable the auto-redeploy.
+
+The full runbook is `Quizup/docs/deployment.md`.
 
 ## Layout
 

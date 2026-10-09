@@ -13,6 +13,7 @@ backend's `/api/admin/*` routes and its admin socket room.
 - **Backend URL:** `VITE_BACKEND_URL` (build time). Empty in dev, where Vite proxies to
   `localhost:3001`. In production the backend must list this origin in `EXTRA_ORIGINS`.
 - **Socket listeners:** pass the handler to `socket.off(event, handler)`.
+- **Deploy:** push to `main` → GitHub Actions → GHCR → Coolify (`operator.kwiz.live`). Runbook: `Quizup/docs/deployment.md`.
 - **Verify locally** against the Quizup local stack, not prod.
 
 ```bash
