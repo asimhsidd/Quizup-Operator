@@ -1,0 +1,861 @@
+import { useEffect, useRef, useState } from 'react';
+import { Fragment } from 'react';
+import { useToastStore } from '../lib/toastStore';
+import { Database } from 'lucide-react';
+import { adminFetch, Btn, Spinner, SortableTableHeader, makeSortHandler, multiSort, API } from '../lib/adminUtils.jsx';
+import { fmtXp } from '../lib/fmt';
+
+function fmtTimeAgo(dateStr) {
+  if (!dateStr) return 'Never';
+  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+  if (diff < 60)   return `${Math.round(diff)}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+const TIER_COLOR = {
+  easy:   'bg-green-100 text-green-700',
+  medium: 'bg-amber-100 text-amber-700',
+  hard:   'bg-red-100 text-red-700',
+};
+
+const REGION_FLAG = { AU: '🇦🇺', US: '🇺🇸', CA: '🇨🇦', EU: '🇪🇺' };
+
+const LOCATION_OPTIONS = [
+  { region: 'AU', country: 'Australia',      city: 'Sydney' },
+  { region: 'AU', country: 'Australia',      city: 'Melbourne' },
+  { region: 'AU', country: 'Australia',      city: 'Brisbane' },
+  { region: 'AU', country: 'Australia',      city: 'Perth' },
+  { region: 'AU', country: 'Australia',      city: 'Adelaide' },
+  { region: 'US', country: 'United States',  city: 'New York' },
+  { region: 'US', country: 'United States',  city: 'Los Angeles' },
+  { region: 'US', country: 'United States',  city: 'Chicago' },
+  { region: 'US', country: 'United States',  city: 'Houston' },
+  { region: 'US', country: 'United States',  city: 'Phoenix' },
+  { region: 'CA', country: 'Canada',         city: 'Toronto' },
+  { region: 'CA', country: 'Canada',         city: 'Vancouver' },
+  { region: 'CA', country: 'Canada',         city: 'Montreal' },
+  { region: 'CA', country: 'Canada',         city: 'Calgary' },
+  { region: 'CA', country: 'Canada',         city: 'Ottawa' },
+  { region: 'EU', country: 'United Kingdom', city: 'London' },
+  { region: 'EU', country: 'Germany',        city: 'Berlin' },
+  { region: 'EU', country: 'France',         city: 'Paris' },
+  { region: 'EU', country: 'Netherlands',    city: 'Amsterdam' },
+  { region: 'EU', country: 'Spain',          city: 'Madrid' },
+];
+
+function MatchHistoryRow({ bot, token, onClose }) {
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { addToast } = useToastStore();
+
+  useEffect(() => {
+    adminFetch(`/admin/bots/${bot.id}/matches?limit=50`, {}, token)
+      .then(d => setMatches(d.matches ?? []))
+      .catch(err => addToast(err.message, 'error'))
+      .finally(() => setLoading(false));
+  }, [bot.id]);
+
+  return (
+    <tr>
+      <td colSpan={7} className="px-0 py-0 border-b border-[#E0E0E0]">
+        <div className="bg-gray-50 border-t border-[#E0E0E0]">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-[#E0E0E0]">
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+              Match History vs Real Users
+            </span>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-sm leading-none">✕</button>
+          </div>
+          {loading ? (
+            <div className="py-6 flex justify-center"><Spinner /></div>
+          ) : matches.length === 0 ? (
+            <p className="text-center text-gray-400 py-6 text-sm">No matches yet.</p>
+          ) : (
+            <div className="max-h-64 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-gray-50 border-b border-[#E0E0E0]">
+                  <tr className="text-left text-xs text-gray-500 uppercase">
+                    <th className="px-4 py-2 font-semibold">Opponent</th>
+                    <th className="px-4 py-2 font-semibold">Topic</th>
+                    <th className="px-4 py-2 font-semibold">Score</th>
+                    <th className="px-4 py-2 font-semibold">Date</th>
+                    <th className="px-4 py-2 font-semibold">Who Won</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {matches.map(m => {
+                    const botWon  = m.result === 'win';
+                    const isDraw  = m.result === 'draw';
+                    return (
+                      <tr key={m.id} className="border-b border-gray-100 hover:bg-white">
+                        <td className="px-4 py-2.5">
+                          <div className="flex items-center gap-2">
+                            {m.real_user_avatar
+                              ? <img src={m.real_user_avatar} className="w-6 h-6 rounded-full object-cover" alt="" />
+                              : <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold">{m.real_user_name?.[0]}</div>
+                            }
+                            <span className="text-[#1A1A2E] font-medium text-xs">{m.real_user_name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-2.5 text-gray-600 text-xs">
+                          {m.topic_icon} {m.topic_name ?? '—'}
+                        </td>
+                        <td className="px-4 py-2.5 text-xs font-mono text-gray-500">
+                          {m.bot_score}–{m.real_score}
+                        </td>
+                        <td className="px-4 py-2.5 text-xs text-gray-400">{fmtTimeAgo(m.created_at)}</td>
+                        <td className="px-4 py-2.5">
+                          {isDraw ? (
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Draw</span>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              {botWon ? (
+                                <>
+                                  {bot.avatar_url
+                                    ? <img src={bot.avatar_url} className="w-4 h-4 rounded-full object-cover" alt="" />
+                                    : <div className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center text-[8px] font-bold">{bot.username[0]}</div>
+                                  }
+                                  <span className="text-xs font-semibold text-green-700">{bot.username}</span>
+                                </>
+                              ) : (
+                                <>
+                                  {m.real_user_avatar
+                                    ? <img src={m.real_user_avatar} className="w-4 h-4 rounded-full object-cover" alt="" />
+                                    : <div className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center text-[8px] font-bold">{m.real_user_name?.[0]}</div>
+                                  }
+                                  <span className="text-xs font-semibold text-blue-700">{m.real_user_name}</span>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function CreateBotPanel({ token, onClose, onCreated }) {
+  const [form, setForm] = useState({
+    firstName: '', gender: 'male', tier: 'medium',
+    locationIdx: 0, active: true,
+  });
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const fileRef = useRef(null);
+  const { addToast } = useToastStore();
+
+  function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
+
+  function handleFile(f) {
+    if (!f) return;
+    setFile(f);
+    const url = URL.createObjectURL(f);
+    setPreview(url);
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError('');
+    if (!file) { setError('Avatar image is required'); return; }
+    if (form.firstName.trim().length < 2) { setError('First name must be at least 2 characters'); return; }
+    setSaving(true);
+    try {
+      const loc = LOCATION_OPTIONS[form.locationIdx];
+      const fd = new FormData();
+      fd.append('avatar',          file);
+      fd.append('firstName',       form.firstName.trim());
+      fd.append('gender',          form.gender);
+      fd.append('tier',            form.tier);
+      fd.append('locationRegion',  loc.region);
+      fd.append('locationCountry', loc.country);
+      fd.append('locationCity',    loc.city);
+      fd.append('active',          String(form.active));
+
+      const res = await fetch(`${API}/admin/bots`, {
+        method: 'POST',
+        headers: { 'x-admin-token': token },
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      addToast(`Bot ${form.firstName} created!`, 'success');
+      onCreated(data.bot);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="flex-1 bg-black/40" onClick={onClose} />
+      <div className="w-full max-w-md bg-white shadow-2xl flex flex-col h-full overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E0E0E0]">
+          <h3 className="font-extrabold text-[#1A1A2E] text-base">Create Bot</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl leading-none">✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+          {/* Avatar upload */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 mb-2">Profile Picture *</label>
+            <div
+              className="flex items-center gap-4 cursor-pointer"
+              onClick={() => fileRef.current?.click()}
+            >
+              {preview
+                ? <img src={preview} className="w-16 h-16 rounded-full object-cover border-2 border-[#E8453C]/30" alt="" />
+                : <div className="w-16 h-16 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-2xl">+</div>
+              }
+              <div>
+                <div className="text-sm font-semibold text-[#E8453C]">Upload photo</div>
+                <div className="text-xs text-gray-400">JPG, PNG — max 10MB</div>
+              </div>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden"
+              onChange={e => { handleFile(e.target.files[0]); e.target.value = ''; }} />
+          </div>
+
+          {/* First name */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 mb-1">First Name *</label>
+            <input
+              value={form.firstName}
+              onChange={e => set('firstName', e.target.value)}
+              placeholder="e.g. Alex"
+              className="w-full border border-[#E0E0E0] rounded-lg px-3 py-2 text-sm text-[#1A1A2E] focus:outline-none focus:border-[#E8453C]"
+              required
+            />
+          </div>
+
+          {/* Gender + Tier */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Gender</label>
+              <select value={form.gender} onChange={e => set('gender', e.target.value)}
+                className="w-full border border-[#E0E0E0] rounded-lg px-3 py-2 text-sm text-[#1A1A2E] focus:outline-none focus:border-[#E8453C] bg-white">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Skill Tier</label>
+              <select value={form.tier} onChange={e => set('tier', e.target.value)}
+                className="w-full border border-[#E0E0E0] rounded-lg px-3 py-2 text-sm text-[#1A1A2E] focus:outline-none focus:border-[#E8453C] bg-white">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Location */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 mb-1">Location</label>
+            <select value={form.locationIdx} onChange={e => set('locationIdx', parseInt(e.target.value))}
+              className="w-full border border-[#E0E0E0] rounded-lg px-3 py-2 text-sm text-[#1A1A2E] focus:outline-none focus:border-[#E8453C] bg-white">
+              {LOCATION_OPTIONS.map((loc, i) => (
+                <option key={i} value={i}>
+                  {REGION_FLAG[loc.region] || ''} {loc.city}, {loc.country}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Active toggle */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div className={`w-10 h-6 rounded-full transition-colors relative ${form.active ? 'bg-green-500' : 'bg-gray-300'}`}
+              onClick={() => set('active', !form.active)}>
+              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${form.active ? 'left-5' : 'left-1'}`} />
+            </div>
+            <span className="text-sm text-gray-700 font-medium">Active (available for matchmaking)</span>
+          </label>
+
+          {error && <p className="text-red-500 text-xs">{error}</p>}
+        </form>
+        <div className="px-5 py-4 border-t border-[#E0E0E0] flex gap-2 justify-end">
+          <Btn onClick={onClose} variant="ghost">Cancel</Btn>
+          <Btn onClick={handleSubmit} variant="primary" disabled={saving || !file || !form.firstName.trim()}>
+            {saving ? 'Creating…' : 'Create Bot'}
+          </Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function BotsTab({ token }) {
+  const [bots, setBots]             = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [settings, setSettings]     = useState({});
+  const [editSettings, setEditSettings] = useState({});
+  const [savingSettings, setSavingSettings] = useState({});
+  const [drawerBot, setDrawerBot]   = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [botSortKeys, setBotSortKeys] = useState([]);
+  const handleBotSort = makeSortHandler(setBotSortKeys);
+  const { addToast } = useToastStore();
+
+  async function load() {
+    setLoading(true);
+    try {
+      const [botsData, settingsData] = await Promise.all([
+        adminFetch('/admin/bots', {}, token),
+        adminFetch('/admin/bot-settings', {}, token),
+      ]);
+      setBots(botsData);
+      setSettings(settingsData);
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function toggleActive(bot) {
+    try {
+      await adminFetch(`/admin/bots/${bot.id}/active`, { method: 'PATCH', body: { active: !bot.bot_active } }, token);
+      setBots(bs => bs.map(b => b.id === bot.id ? { ...b, bot_active: !b.bot_active } : b));
+    } catch (err) {
+      addToast(err.message, 'error');
+    }
+  }
+
+  async function saveSetting(key) {
+    const meta = SETTINGS_META.find(m => m.key === key);
+    const val  = editSettings[key];
+    if (!val || isNaN(parseInt(val))) return;
+    const dbValue = meta?.isMs ? parseInt(val) * 1000 : parseInt(val);
+    setSavingSettings(s => ({ ...s, [key]: true }));
+    try {
+      await adminFetch('/admin/bot-settings', { method: 'PATCH', body: { key, value: String(dbValue) } }, token);
+      setSettings(s => ({ ...s, [key]: dbValue }));
+      setEditSettings(e => { const n = { ...e }; delete n[key]; return n; });
+      addToast('Setting saved', 'success');
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setSavingSettings(s => ({ ...s, [key]: false }));
+    }
+  }
+
+  async function saveSettingDirect(key, value) {
+    try {
+      await adminFetch('/admin/bot-settings', { method: 'PATCH', body: { key, value: String(value) } }, token);
+      setSettings(s => ({ ...s, [key]: value }));
+    } catch (err) {
+      addToast(err.message, 'error');
+    }
+  }
+
+  const sorted = multiSort(bots, botSortKeys);
+
+  const BOT_COLS = [
+    { label: 'Bot',         key: 'username'          },
+    { label: 'Location',    key: 'location'          },
+    { label: 'Tier',        key: 'bot_tier'          },
+    { label: 'XP',          key: 'total_xp'          },
+    { label: 'Matches',     key: 'real_user_matches' },
+    { label: 'Last Active', key: 'last_game_at'      },
+    { label: 'Active',      key: 'bot_active'        },
+  ];
+
+  const SETTINGS_META = [
+    { key: 'matchmaking_bot_delay_ms',               label: 'Matchmaking bot delay',   unit: 's', isMs: true, hint: 'Wait before injecting a bot when no real player is found (default 8s)' },
+    { key: 'scheduler_min_delay_ms',                 label: 'Tick interval min',       unit: 's', isMs: true, hint: 'Minimum time between global bot activity ticks (default 60s)' },
+    { key: 'scheduler_max_delay_ms',                 label: 'Tick interval max',       unit: 's', isMs: true, hint: 'Maximum time between global bot activity ticks (default 180s = 3 min)' },
+    { key: 'bot_cooldown_ms',                        label: 'Per-bot cooldown',        unit: 's', isMs: true, hint: 'How long before the same bot can act again (default 900s = 15 min)' },
+    { key: 'max_challenges_per_online_user_per_day', label: 'Max challenges per user/day', unit: '',  isMs: false, hint: 'Max bot challenges a single real user can receive in 24 hours (default 3)' },
+  ];
+
+  const challengeOfflineEnabled = !!settings['bots_challenge_offline_users'];
+
+  if (loading) return <Spinner />;
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Settings */}
+      <div className="bg-white border border-[#E0E0E0] shadow-sm rounded-xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-extrabold text-[#1A1A2E] text-base">Bot Settings</h3>
+          {/* Master switch */}
+          <label className="flex items-center gap-2.5 cursor-pointer select-none">
+            <span className="text-sm font-semibold text-[#1A1A2E]">Bots Enabled</span>
+            <div className="relative">
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={!!settings['bots_enabled']}
+                onChange={e => saveSettingDirect('bots_enabled', e.target.checked ? 1 : 0)}
+              />
+              <div
+                onClick={() => saveSettingDirect('bots_enabled', settings['bots_enabled'] ? 0 : 1)}
+                className={`w-11 h-6 rounded-full cursor-pointer transition-colors ${settings['bots_enabled'] ? 'bg-green-500' : 'bg-gray-300'}`}
+              />
+              <div
+                onClick={() => saveSettingDirect('bots_enabled', settings['bots_enabled'] ? 0 : 1)}
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform cursor-pointer ${settings['bots_enabled'] ? 'translate-x-5' : 'translate-x-0'}`}
+              />
+            </div>
+          </label>
+        </div>
+        <div className={`flex flex-col gap-4 max-w-lg ${!settings['bots_enabled'] ? 'opacity-50 pointer-events-none' : ''}`}>
+          {SETTINGS_META.map(({ key, label, hint, unit, isMs }) => {
+            const rawDb   = settings[key] ?? '';
+            const display = rawDb !== '' && isMs ? String(Math.round(Number(rawDb) / 1000)) : String(rawDb);
+            const draft   = editSettings[key] ?? display;
+            const dirty   = editSettings[key] !== undefined && editSettings[key] !== display;
+            return (
+              <div key={key} className="flex flex-col gap-1.5">
+                <div className="text-sm font-semibold text-[#1A1A2E]">
+                  {label}{unit ? <span className="ml-1 text-xs font-normal text-gray-400">({unit})</span> : null}
+                </div>
+                <div className="text-xs text-gray-400">{hint}</div>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="number"
+                    value={draft}
+                    onChange={e => setEditSettings(es => ({ ...es, [key]: e.target.value }))}
+                    className="w-36 border border-[#E0E0E0] rounded-lg px-3 py-2 text-sm text-[#1A1A2E] focus:outline-none focus:border-[#E8453C]"
+                  />
+                  {dirty && (
+                    <Btn onClick={() => saveSetting(key)} variant="success" disabled={savingSettings[key]}>
+                      {savingSettings[key] ? 'Saving…' : 'Save'}
+                    </Btn>
+                  )}
+                  {dirty && (
+                    <Btn onClick={() => setEditSettings(es => { const n = { ...es }; delete n[key]; return n; })} variant="ghost">
+                      Cancel
+                    </Btn>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Divider */}
+          <div className="border-t border-[#E0E0E0] my-1" />
+
+          {/* Checkboxes */}
+          {[
+            { key: 'bots_challenge_real_users',    label: 'Bots challenge real users',           hint: 'Allow bots to proactively send challenges to real users' },
+            { key: 'bots_accept_challenges',        label: 'Bots accept challenges from real users', hint: 'Allow bots to accept challenges sent by real users. If off, bot challenges are immediately declined.' },
+            { key: 'bots_challenge_offline_users',  label: 'Bots challenge offline real users',  hint: 'Allow bots to challenge users who are not currently online' },
+          ].map(({ key, label, hint }) => (
+            <div key={key} className="flex flex-col gap-1">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={!!settings[key]}
+                  onChange={e => saveSettingDirect(key, e.target.checked ? 1 : 0)}
+                  className="w-4 h-4 accent-[#1A1A2E] cursor-pointer"
+                />
+                <span className="text-sm font-semibold text-[#1A1A2E]">{label}</span>
+              </label>
+              <div className="text-xs text-gray-400 ml-6">{hint}</div>
+            </div>
+          ))}
+
+          {/* Divider */}
+          <div className="border-t border-[#E0E0E0] my-1" />
+
+          {/* Challenge cap dropdowns */}
+          {[
+            { key: 'max_challenges_per_online_user_per_day',  label: 'Max bot challenges per online user per 24 hours',  disabled: false },
+            { key: 'max_challenges_per_offline_user_per_day', label: 'Max bot challenges per offline user per 24 hours', disabled: !challengeOfflineEnabled },
+          ].map(({ key, label, disabled }) => (
+            <div key={key} className={`flex flex-col gap-1.5 ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
+              <div className="text-sm font-semibold text-[#1A1A2E]">{label}</div>
+              <select
+                value={settings[key] ?? 3}
+                onChange={e => saveSettingDirect(key, parseInt(e.target.value))}
+                disabled={disabled}
+                className="w-24 border border-[#E0E0E0] rounded-lg px-3 py-2 text-sm text-[#1A1A2E] bg-white focus:outline-none focus:border-[#E8453C]"
+              >
+                {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bot list */}
+      <div>
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <h3 className="font-extrabold text-[#1A1A2E] text-base">
+            Bots ({bots.length})
+            <span className="ml-2 text-xs font-normal text-gray-400">
+              {bots.filter(b => b.bot_active).length} active
+            </span>
+          </h3>
+          <div className="flex items-center gap-2">
+            <Btn onClick={() => setShowCreate(true)} variant="primary">+ Create Bot</Btn>
+            <Btn onClick={load} variant="ghost">Refresh</Btn>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto bg-white border border-[#E0E0E0] rounded-xl shadow-sm">
+          <table className="w-full text-sm">
+            <SortableTableHeader columns={BOT_COLS} sortKeys={botSortKeys} onSort={handleBotSort} />
+            <tbody>
+              {sorted.map(bot => (
+                <Fragment key={bot.id}>
+                  <tr className={`border-b border-gray-100 ${drawerBot?.id === bot.id ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        {bot.avatar_url
+                          ? <img src={bot.avatar_url} className="w-8 h-8 rounded-full object-cover shrink-0" alt="" />
+                          : <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold shrink-0">{bot.username[0]}</div>
+                        }
+                        <span className="font-semibold text-[#1A1A2E]">{bot.username}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      {REGION_FLAG[bot.bot_location?.region] || ''} {bot.bot_location?.city ?? '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${TIER_COLOR[bot.bot_tier] ?? 'bg-gray-100 text-gray-500'}`}>
+                        {bot.bot_tier ?? '—'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-cyan-600 font-bold text-xs">{fmtXp(bot.total_xp)}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setDrawerBot(drawerBot?.id === bot.id ? null : bot)}
+                        className="text-cyan-600 font-bold text-xs underline-offset-2 hover:underline"
+                      >
+                        {bot.real_user_matches ?? 0}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-gray-400 text-xs">{fmtTimeAgo(bot.last_game_at)}</td>
+                    <td className="px-4 py-3">
+                      {/* Toggle switch */}
+                      <div
+                        className={`w-9 h-5 rounded-full cursor-pointer transition-colors relative ${bot.bot_active ? 'bg-green-500' : 'bg-gray-300'}`}
+                        onClick={() => toggleActive(bot)}
+                      >
+                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${bot.bot_active ? 'left-4' : 'left-0.5'}`} />
+                      </div>
+                    </td>
+                  </tr>
+                  {drawerBot?.id === bot.id && (
+                    <MatchHistoryRow bot={bot} token={token} onClose={() => setDrawerBot(null)} />
+                  )}
+                </Fragment>
+              ))}
+              {sorted.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="text-center text-gray-400 py-8 text-sm">No bots found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {showCreate && (
+        <CreateBotPanel
+          token={token}
+          onClose={() => setShowCreate(false)}
+          onCreated={bot => {
+            setBots(bs => [bot, ...bs]);
+            setShowCreate(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Tab: Batch Seed Topics ────────────────────────────────────────────────────
+export function BatchSeedTab({ token }) {
+  const [state, setState]           = useState('upload'); // 'upload' | 'preview' | 'running' | 'complete'
+  const [parsedTree, setParsedTree] = useState(null);
+  const [preview, setPreview]       = useState(null);
+  const [progress, setProgress]     = useState(null);
+  const [complete, setComplete]     = useState(null);
+  const [uploadError, setUploadError] = useState(null);
+  const [dragOver, setDragOver]     = useState(false);
+  const [expanded, setExpanded]     = useState({});
+  const esRef  = useRef(null);
+  const fileInputRef = useRef(null);
+
+  async function handleFile(file) {
+    setUploadError(null);
+    if (!file?.name.endsWith('.json')) { setUploadError('Please upload a .json file'); return; }
+    let tree;
+    try { tree = JSON.parse(await file.text()); }
+    catch { setUploadError('Invalid JSON — could not parse file'); return; }
+
+    let data, res;
+    try {
+      res = await fetch(`${API}/admin/seed-topics/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify(tree),
+      });
+      data = await res.json();
+    } catch { setUploadError('Network error — could not reach server'); return; }
+
+    if (!res.ok) { setUploadError(data.errors?.join('\n') ?? 'Validation failed'); return; }
+    setParsedTree(tree);
+    setPreview(data);
+    setExpanded({});
+    setState('preview');
+  }
+
+  function onDrop(e) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  }
+
+  async function startSeeding() {
+    setState('running');
+    setProgress(null);
+    // Step 1: POST the tree to get a jobId (avoids 414 from long SSE URLs)
+    let jobId;
+    try {
+      const res = await fetch(`${API}/admin/seed-topics/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify(parsedTree),
+      });
+      const data = await res.json();
+      if (!res.ok) { setUploadError(data.error ?? 'Failed to start job'); setState('upload'); return; }
+      jobId = data.jobId;
+    } catch { setUploadError('Network error — could not reach server'); setState('upload'); return; }
+
+    // Step 2: open SSE stream by jobId — token sent in Authorization header (not query string)
+    const url = `${API}/admin/seed-topics/stream?jobId=${encodeURIComponent(jobId)}`;
+    const abortCtrl = new AbortController();
+    esRef.current = abortCtrl;
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: abortCtrl.signal,
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        setUploadError(err.error ?? 'Stream connection failed');
+        setState('upload');
+        return;
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // retain any incomplete trailing line
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          try {
+            const data = JSON.parse(line.slice(5).trim());
+            if (data.type === 'start' || data.type === 'progress') setProgress(data);
+            if (data.type === 'complete') { setComplete(data); setState('complete'); reader.cancel(); return; }
+            if (data.type === 'error')    { setUploadError(data.message); setState('upload'); reader.cancel(); return; }
+          } catch {}
+        }
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') { /* silent — keep progress visible */ }
+    }
+  }
+
+  function stopSeeding() {
+    esRef.current?.abort();
+    setState('upload');
+    setProgress(null);
+  }
+
+  function reset() {
+    esRef.current?.abort();
+    setState('upload');
+    setParsedTree(null);
+    setPreview(null);
+    setProgress(null);
+    setComplete(null);
+    setUploadError(null);
+  }
+
+  function fmtTime(totalTopics) {
+    const mins = Math.ceil(totalTopics * 5.5 / 3 / 60);
+    const h = Math.floor(mins / 60), m = mins % 60;
+    if (h === 0) return `~${m} min${m !== 1 ? 's' : ''}`;
+    return `~${h} hr${h !== 1 ? 's' : ''} ${m > 0 ? `${m} min${m !== 1 ? 's' : ''}` : ''}`.trim();
+  }
+
+  const cardCls = 'bg-white border border-[#E0E0E0] rounded-xl shadow-sm overflow-hidden';
+  const hdrCls  = 'px-5 py-4 border-b border-[#E0E0E0] font-bold text-[#1A1A2E]';
+
+  // ── STATE: upload ──
+  if (state === 'upload') return (
+    <div className={cardCls}>
+      <div className={hdrCls}>Batch Seed Topics</div>
+      <div className="p-5 space-y-4">
+        <p className="text-sm text-gray-500">
+          Upload a JSON file to mass-generate topics and questions. 14 questions per topic, 3 in parallel. Missing categories are auto-created.
+        </p>
+
+        {/* Drop zone */}
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={onDrop}
+          className="border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors select-none"
+          style={{ borderColor: dragOver ? '#E8453C' : '#D1D5DB', background: dragOver ? '#FFF5F5' : '#FAFAFA' }}
+        >
+          <Database size={28} className="text-gray-400" />
+          <p className="text-sm font-semibold text-gray-600">Drag & drop a .json file</p>
+          <p className="text-xs text-gray-400">or click to browse</p>
+        </div>
+        <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={e => { if (e.target.files[0]) handleFile(e.target.files[0]); e.target.value = ''; }} />
+
+        {uploadError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 whitespace-pre-wrap">{uploadError}</div>
+        )}
+
+        <p className="text-xs text-gray-400">
+          Expected format: <code className="bg-gray-100 px-1 rounded">{'{ "Category": { "Sub": ["Topic 1", ...] } }'}</code>
+        </p>
+      </div>
+    </div>
+  );
+
+  // ── STATE: preview ──
+  if (state === 'preview') return (
+    <div className={cardCls}>
+      <div className={hdrCls}>Preview — ready to seed</div>
+      <div className="p-5 space-y-3">
+        <div className="space-y-1 max-h-96 overflow-y-auto pr-1">
+          {preview.summary.map(root => (
+            <div key={root.name} className="border border-[#E0E0E0] rounded-lg overflow-hidden">
+              <button
+                onClick={() => setExpanded(x => ({ ...x, [root.name]: !x[root.name] }))}
+                className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-gray-400">{expanded[root.name] ? '▼' : '▶'}</span>
+                  {root.name}
+                </span>
+                <span className="text-gray-500 font-normal">{root.topicCount.toLocaleString()} topics</span>
+              </button>
+              {expanded[root.name] && (
+                <div className="divide-y divide-[#F0F0F0]">
+                  {root.subs.map(sub => (
+                    <div key={sub.name} className="flex items-center justify-between px-6 py-2 text-sm bg-white">
+                      <span className="text-gray-600">{sub.name}</span>
+                      <span className="text-gray-400">{sub.topicCount} topics</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="border-t border-[#E0E0E0] pt-3 text-sm text-gray-600 flex items-center justify-between">
+          <span><strong>{preview.totalTopics.toLocaleString()}</strong> topics total</span>
+          <span className="text-gray-400">{fmtTime(preview.totalTopics)} estimated</span>
+        </div>
+
+        <p className="text-xs text-gray-400">Topics already in DB with questions will be skipped automatically.</p>
+
+        <div className="flex items-center gap-3 pt-1">
+          <button onClick={reset} className="flex-1 py-2.5 rounded-lg border border-[#E0E0E0] text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+            ← Upload Different File
+          </button>
+          <button onClick={startSeeding} className="flex-1 py-2.5 rounded-lg text-sm font-bold text-white transition-colors" style={{ background: '#E8453C' }}>
+            🚀 Start Seeding
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── STATE: running ──
+  if (state === 'running') {
+    const pct = progress ? Math.round((progress.done / progress.total) * 100) : 0;
+    return (
+      <div className={cardCls}>
+        <div className={hdrCls}>⚡ Seeding in progress…</div>
+        <div className="p-5 space-y-5">
+          {progress?.inFlight?.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">In progress ({progress.inFlight.length})</p>
+              {progress.inFlight.map(name => (
+                <p key={name} className="text-sm text-gray-700">⚙ {name}</p>
+              ))}
+            </div>
+          )}
+
+          {/* Progress bar */}
+          <div>
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div className="h-3 rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: '#E8453C' }} />
+            </div>
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>{progress ? `${progress.done.toLocaleString()} / ${progress.total.toLocaleString()}` : '—'}</span>
+              <span>{pct}%</span>
+            </div>
+          </div>
+
+          {/* Counters */}
+          {progress && (
+            <div className="flex items-center justify-center gap-6 text-sm">
+              <span>✅ Generated: <strong>{(progress.done - progress.skipped - progress.failed).toLocaleString()}</strong></span>
+              <span>⏭ Skipped: <strong>{progress.skipped.toLocaleString()}</strong></span>
+              <span>❌ Failed: <strong>{progress.failed.toLocaleString()}</strong></span>
+            </div>
+          )}
+
+          <div className="flex justify-center">
+            <button onClick={stopSeeding} className="px-8 py-2.5 rounded-lg border border-red-300 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors">
+              ⏹ Stop
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── STATE: complete ──
+  return (
+    <div className={cardCls}>
+      <div className={hdrCls}>✅ Seeding complete</div>
+      <div className="p-5 space-y-4 text-center">
+        <div className="flex items-center justify-center gap-6 text-sm py-2">
+          <span>✅ Generated: <strong>{complete ? (complete.done - complete.skipped - complete.failed).toLocaleString() : '—'}</strong></span>
+          <span>⏭ Skipped: <strong>{complete?.skipped.toLocaleString() ?? '—'}</strong></span>
+          <span>❌ Failed: <strong>{complete?.failed.toLocaleString() ?? '—'}</strong></span>
+        </div>
+        {complete?.failed > 0 && (
+          <p className="text-xs text-gray-400">Failed topics were kept in the database without questions — you can regenerate them manually from the Topics tab.</p>
+        )}
+        <button onClick={reset} className="px-8 py-2.5 rounded-lg text-sm font-bold text-white transition-colors" style={{ background: '#E8453C' }}>
+          Upload Another File
+        </button>
+      </div>
+    </div>
+  );
+}
