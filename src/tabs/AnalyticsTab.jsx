@@ -43,6 +43,63 @@ function RetentionBadge({ label, value, thresholdGood, thresholdOk }) {
   );
 }
 
+// ── Activation funnel ─────────────────────────────────────────────────────────
+// Sign-ups in the last N days, step by step (GET /admin/analytics/funnel). D1/D7 count
+// any day the app was opened, and only people whose day 1/7 has come ("of").
+function FunnelSection({ token, refreshKey }) {
+  const [days, setDays] = useState(30);
+  const [funnel, setFunnel] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let live = true;
+    setError(null);
+    adminFetch(`/admin/analytics/funnel?days=${days}`, {}, token)
+      .then(f => { if (live) setFunnel(f); })
+      .catch(err => { if (live) setError(err.message); });
+    return () => { live = false; };
+  }, [days, token, refreshKey]);
+
+  return (
+    <>
+      <SectionHeading>Activation funnel</SectionHeading>
+      <div className="bg-white border border-[#E0E0E0] shadow-sm rounded-xl p-4 mb-6">
+        {error && <div className="text-red-500 text-sm">Couldn't load the funnel: {error}</div>}
+        {!error && !funnel && <Spinner />}
+        {funnel && (
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-gray-400 text-xs">People who signed up in the last {funnel.days} days (bots excluded, UTC days)</div>
+              <div className="flex gap-1 shrink-0">
+                {[7, 30, 90].map(d => (
+                  <button key={d} onClick={() => setDays(d)}
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-lg border ${days === d ? 'bg-[#1A1A2E] text-white border-[#1A1A2E]' : 'bg-white text-gray-600 border-[#E0E0E0]'}`}>
+                    {d}d
+                  </button>
+                ))}
+              </div>
+            </div>
+            {funnel.steps.map(st => {
+              const pct = st.of > 0 ? (st.count / st.of) * 100 : 0;
+              return (
+                <div key={st.key} className="grid grid-cols-[minmax(0,13rem)_1fr_auto] items-center gap-3 text-sm">
+                  <span className="text-[#1A1A2E] font-medium truncate">{st.label}</span>
+                  <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
+                    <div className="h-full rounded-full bg-[#E8453C]" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="text-gray-600 tabular-nums text-xs w-28 text-right">
+                    {st.of > 0 ? `${st.count} / ${st.of} · ${pct.toFixed(0)}%` : 'not due yet'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ── Tab: Analytics (includes Live Sessions) ───────────────────────────────────
 export default function AnalyticsTab({ token }) {
   const [data, setData] = useState({
@@ -199,6 +256,8 @@ export default function AnalyticsTab({ token }) {
               </ResponsiveContainer>
             </div>
           </div>
+
+          <FunnelSection token={token} refreshKey={lastRefreshed?.getTime()} />
 
           {/* ── Section 3: Retention & Engagement ──────────────────────────── */}
           <SectionHeading>Retention & Engagement</SectionHeading>
