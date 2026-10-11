@@ -149,8 +149,6 @@ const CONFIG_META = {
   solo_perfect_bonus:  { label: 'Solo perfect bonus XP',        hint: 'Extra XP in solo mode for a perfect score (max points on every question)', group: 'XP Economy' },
   solo_speed_bonus:    { label: 'Solo speed bonus XP',          hint: 'Bonus XP in solo mode when average response time is under 5 seconds', group: 'XP Economy' },
   // ── Daily challenge XP ───────────────────────────────────────────────────────
-  daily_challenge_xp:  { label: 'Daily challenge extra XP',     hint: 'Flat bonus XP added on top of challenge.bonus_xp when a daily challenge is completed', group: 'XP Economy' },
-  daily_perfect_bonus: { label: 'Daily perfect bonus XP',       hint: 'Additional XP reserved for future perfect daily-challenge completion logic', group: 'XP Economy' },
   // ── Login streaks ────────────────────────────────────────────────────────────
   streak_milestones:   { label: 'Login streak milestones (JSON)', hint: 'JSON object mapping streak day count to bonus XP, e.g. {"3":50,"7":150,"30":500}', group: 'XP Economy', textarea: true },
   // ── Content ──────────────────────────────────────────────────────────────────
