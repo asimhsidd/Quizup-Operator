@@ -40,7 +40,7 @@ export default function LiveTab({ token }) {
             <h2 className="text-lg font-bold text-[#1A1A2E]">KWIZ Live</h2>
             <p className="text-sm text-gray-600">
               {s.enabled
-                ? `On. One event a day at ${s.dailyTime} (${s.timezone}). Survivors split ${s.prizeXp.toLocaleString()} XP, at least ${s.minEach} each. Under ${s.minPlayers} players it runs as practice with no prize.`
+                ? `On. One event a day at ${s.dailyTime} (${s.timezone}). The pool grows ${s.poolPerPlayer ?? 100} XP a player, from ${(s.poolMin ?? 2000).toLocaleString()} up to ${s.prizeXp.toLocaleString()} XP; survivors split it, at least ${s.minEach} each, and get the Champion plate for ${s.championDays ?? 7} days. Under ${s.minPlayers} players it runs as practice with no prize.`
                 : 'Off. Players see nothing. Turn it on when there are enough real players to fill a room.'}
             </p>
           </div>
@@ -82,7 +82,7 @@ export default function LiveTab({ token }) {
                    onChange={e => setForm(f => ({ ...f, startsAt: e.target.value }))}
                    className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-gray-900" />
           </label>
-          {[['prizeXp', 'Prize XP', s.prizeXp], ['minPlayers', 'Min players', s.minPlayers], ['questionCount', 'Questions', s.questionCount]].map(([key, label, ph]) => (
+          {[['prizeXp', 'Max pool XP', s.prizeXp], ['minPlayers', 'Min players', s.minPlayers], ['questionCount', 'Questions', s.questionCount]].map(([key, label, ph]) => (
             <label key={key} className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
               {label}
               <input id={`live-${key}`} type="number" min="0" placeholder={String(ph)} value={form[key]}
@@ -112,7 +112,7 @@ export default function LiveTab({ token }) {
                 </td>
                 <td className="px-4 py-2 tabular-nums">{e.joined}</td>
                 <td className="px-4 py-2 tabular-nums">{e.status === 'finished' ? e.winners : '–'}</td>
-                <td className="px-4 py-2 tabular-nums">{e.status === 'finished' ? `${e.prize_each} XP` : `${e.prize_xp} XP pool`}</td>
+                <td className="px-4 py-2 tabular-nums">{e.status === 'finished' ? `${e.prize_each} XP` : `up to ${e.prize_xp} XP`}</td>
                 <td className="px-4 py-2">
                   {e.status === 'scheduled' && (
                     <div className="flex gap-2">
