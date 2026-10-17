@@ -183,9 +183,21 @@ const CONFIG_META = {
   // ── Store ───────────────────────────────────────────────────────────────────
   billing_enabled:               { label: 'Selling through Google Play — on',  hint: 'Off hides every buy button (the shop and the KWIZ+ paywall stay up). Coin packs are edited in the Store tab; money prices live in Play Console.', group: 'Store', toggle: true },
   avatar_cartoon_daily_limit:    { label: 'Cartoon portraits a day (anyone)',  hint: 'A safety cap on drawings per player per rolling day. Default: 5.', group: 'Store' },
+  // ── AI models (the prices only feed the cost estimates in AI Logs) ──────────
+  ai_questions_model:             { label: 'Questions — model',                  hint: 'Together.AI model id that writes topic questions. Must be a serverless model (together.ai/models). Takes effect on the next generation.', group: 'AI models', text: true },
+  ai_questions_input_usd_per_m:   { label: 'Questions — input price (US$ / 1M tokens)',  hint: 'From the model\'s Together.AI page.', group: 'AI models' },
+  ai_questions_output_usd_per_m:  { label: 'Questions — output price (US$ / 1M tokens)', hint: 'From the model\'s Together.AI page.', group: 'AI models' },
+  ai_categorise_model:            { label: 'Categorisation — model',             hint: 'Together.AI model id that files new topics into categories. Must be a serverless model.', group: 'AI models', text: true },
+  ai_categorise_input_usd_per_m:  { label: 'Categorisation — input price (US$ / 1M tokens)',  hint: 'From the model\'s Together.AI page.', group: 'AI models' },
+  ai_categorise_output_usd_per_m: { label: 'Categorisation — output price (US$ / 1M tokens)', hint: 'From the model\'s Together.AI page.', group: 'AI models' },
+  ai_validation_model:            { label: 'Validation — model (Gemini)',        hint: 'Google Gemini model id that fact-checks answers, e.g. gemini-2.5-flash-lite.', group: 'AI models', text: true },
+  ai_validation_input_usd_per_m:  { label: 'Validation — input price (US$ / 1M tokens)',  hint: 'From Google\'s Gemini API pricing page.', group: 'AI models' },
+  ai_validation_output_usd_per_m: { label: 'Validation — output price (US$ / 1M tokens)', hint: 'Includes thinking tokens. From Google\'s Gemini API pricing page.', group: 'AI models' },
+  ai_avatar_model:                { label: 'Cartoon portraits — model',          hint: 'Together.AI image model that draws profile pictures. It must accept reference images (the player\'s photo).', group: 'AI models', text: true },
+  ai_avatar_usd_per_image:        { label: 'Cartoon portraits — price per picture (US$)', hint: 'At 1024×1024. From the model\'s Together.AI page.', group: 'AI models' },
 };
 
-const CONFIG_GROUP_ORDER = ['Gameplay', 'XP Economy', 'Coins', 'Lifelines', 'KWIZ+', 'Store', 'Content'];
+const CONFIG_GROUP_ORDER = ['Gameplay', 'XP Economy', 'Coins', 'Lifelines', 'KWIZ+', 'Store', 'Content', 'AI models'];
 
 export default function ConfigTab({ token }) {
   const [config, setConfig] = useState([]);
@@ -303,6 +315,7 @@ export default function ConfigTab({ token }) {
           ) : (
             <input
               type="number"
+              step="any"
               value={draft}
               onChange={e => setEditing(ed => ({ ...ed, [key]: e.target.value }))}
               className="bg-gray-50 border border-[#E0E0E0] text-[#1A1A2E] rounded-lg px-3 py-2
