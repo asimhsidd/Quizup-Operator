@@ -154,16 +154,38 @@ const CONFIG_META = {
   // ── Content ──────────────────────────────────────────────────────────────────
   problem_solving_keywords: { label: 'Problem-Solving Keywords', hint: 'Comma-separated topic keywords that trigger the problem-solving prompt instead of standard trivia (e.g. maths, coding, algebra). Changes take effect on the next generation.', group: 'Content', textarea: true },
   ingame_reaction_emojis: { label: 'In-Game Reaction Emojis',   hint: 'Comma-separated emoji set shown to players during multiplayer matches (e.g. 🔥,😂,👏,😤,💀,🎯)', group: 'Content', text: true },
-  // ── Lifelines ─────────────────────────────────────────────────────────────────
-  lifeline_5050_enabled:        { label: '50/50 lifeline — enabled',        hint: 'Show the 50/50 lifeline button in-game (eliminates 2 wrong answers for an XP cost).', group: 'Lifelines', toggle: true },
-  lifeline_shield_enabled:      { label: 'Shield lifeline — enabled',       hint: 'Show the Guardian Shield lifeline button in-game (protects streak on next wrong answer for an XP cost).', group: 'Lifelines', toggle: true },
-  lifeline_scoreheist_enabled:  { label: 'Score Heist lifeline — enabled',  hint: 'Show the Score Heist lifeline button in-game (steals 30% of opponent score on correct answer; 2× XP penalty on wrong answer).', group: 'Lifelines', toggle: true },
-  lifeline_5050_cost:           { label: '50/50 — XP cost to activate',     hint: 'XP deducted when the 50/50 lifeline is used. Default: 50.', group: 'Lifelines' },
-  lifeline_shield_cost:         { label: 'Shield — XP cost to activate',    hint: 'XP deducted when the Guardian Shield is activated. Default: 80.', group: 'Lifelines' },
-  lifeline_scoreheist_cost:     { label: 'Score Heist — XP cost to activate', hint: 'XP deducted to arm the heist. An additional 2× this amount is deducted as penalty if the player answers wrong. Default: 100.', group: 'Lifelines' },
+  // ── Lifelines (priced in coins; XP is never spent) ──────────────────────────
+  lifeline_5050_enabled:        { label: '50/50 lifeline — enabled',        hint: 'Show the 50/50 lifeline (removes 2 wrong answers).', group: 'Lifelines', toggle: true },
+  lifeline_shield_enabled:      { label: 'Shield lifeline — enabled',       hint: 'Show the Shield lifeline (a wrong answer counts as right once).', group: 'Lifelines', toggle: true },
+  lifeline_scoreheist_enabled:  { label: 'Score Heist lifeline — enabled',  hint: 'Show Score Heist (steals 30% of the opponent\'s score on a right answer; a wrong one costs the same stake from your own match score).', group: 'Lifelines', toggle: true },
+  lifeline_doubledip_enabled:   { label: 'Double Dip lifeline — enabled',   hint: 'Show Double Dip (2× points for a right answer this round).', group: 'Lifelines', toggle: true },
+  lifeline_5050_coins:          { label: '50/50 — price in coins',          hint: 'Coins taken when 50/50 is used. Default: 20.', group: 'Lifelines' },
+  lifeline_shield_coins:        { label: 'Shield — price in coins',         hint: 'Coins taken when Shield is used. Default: 30.', group: 'Lifelines' },
+  lifeline_scoreheist_coins:    { label: 'Score Heist — price in coins',    hint: 'Coins taken to arm the heist. Default: 40.', group: 'Lifelines' },
+  lifeline_doubledip_coins:     { label: 'Double Dip — price in coins',     hint: 'Coins taken when Double Dip is used. Default: 25.', group: 'Lifelines' },
+  // ── Coins ───────────────────────────────────────────────────────────────────
+  coins_starting_grant:   { label: 'Starting coins',                 hint: 'Coins every new account gets once, at sign-up. Default: 150.', group: 'Coins' },
+  mission_daily_coins:    { label: 'Daily mission reward (coins)',   hint: 'Coins per claimed daily mission, on top of its XP. Default: 10.', group: 'Coins' },
+  mission_weekly_coins:   { label: 'Weekly mission reward (coins)',  hint: 'Coins per claimed weekly mission, on top of its XP. Default: 50.', group: 'Coins' },
+  reward_track_coins:     { label: 'Daily reward track (coins, JSON)', hint: 'Coins for day 1…7 of the login reward track, e.g. [10,10,15,15,20,25,60]. Missing days pay none.', group: 'Coins', text: true },
+  live_win_coins:         { label: 'KWIZ Live win (coins)',          hint: 'Coins each Live winner gets, on top of the XP prize. Default: 100.', group: 'Coins' },
+  referral_coins:         { label: 'Invite reward (coins)',          hint: 'Coins for each side when an invited friend finishes their first match. Default: 100.', group: 'Coins' },
+  live_extra_life_coins:  { label: 'Live extra life (coins)',        hint: 'Price of an extra KWIZ Live life, bought in the lobby. Unused ones are refunded. Default: 50.', group: 'Coins' },
+  live_max_bought_lives:  { label: 'Live extra lives a player may buy', hint: 'Per event. 0 turns buying lives off. Default: 1.', group: 'Coins' },
+  // ── KWIZ+ ───────────────────────────────────────────────────────────────────
+  plus_enabled:                  { label: 'KWIZ+ — on',                        hint: 'Off: nobody gets KWIZ+ benefits and the paywall is hidden (subscriptions keep running in Play).', group: 'KWIZ+', toggle: true },
+  plus_custom_topics_monthly:    { label: 'Brand-new AI topics a month',       hint: 'New custom topics (each one an AI generation) a KWIZ+ player may create per local month. Finding an existing topic is free for everyone. Default: 10.', group: 'KWIZ+' },
+  plus_avatars_monthly:          { label: 'Cartoon portraits a month',         hint: 'Comic portraits after the free first one, per local month. Default: 5.', group: 'KWIZ+' },
+  plus_free_lifelines_per_match: { label: 'Free lifelines each match',         hint: 'Lifelines that cost no coins in each game. Default: 1.', group: 'KWIZ+' },
+  plus_live_lives_per_event:     { label: 'Extra lives each KWIZ Live',        hint: 'Used after the weekly free life, before bought ones. Default: 1.', group: 'KWIZ+' },
+  plus_daily_coins:              { label: 'Daily coins',                       hint: 'Coins a KWIZ+ player collects once a local day (the Shop). Default: 30.', group: 'KWIZ+' },
+  plus_badge_enabled:            { label: 'KWIZ+ badge on profiles',           hint: 'Show the KWIZ+ badge on subscribers\' profiles.', group: 'KWIZ+', toggle: true },
+  // ── Store ───────────────────────────────────────────────────────────────────
+  billing_enabled:               { label: 'Selling through Google Play — on',  hint: 'Off hides every buy button (the shop and the KWIZ+ paywall stay up). Coin packs are edited in the Store tab; money prices live in Play Console.', group: 'Store', toggle: true },
+  avatar_cartoon_daily_limit:    { label: 'Cartoon portraits a day (anyone)',  hint: 'A safety cap on drawings per player per rolling day. Default: 5.', group: 'Store' },
 };
 
-const CONFIG_GROUP_ORDER = ['Gameplay', 'XP Economy', 'Content', 'Lifelines'];
+const CONFIG_GROUP_ORDER = ['Gameplay', 'XP Economy', 'Coins', 'Lifelines', 'KWIZ+', 'Store', 'Content'];
 
 export default function ConfigTab({ token }) {
   const [config, setConfig] = useState([]);

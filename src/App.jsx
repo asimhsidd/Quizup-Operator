@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useToastStore } from './lib/toastStore';
 import { socket } from './lib/socket';
-import { Users, BookOpen, Bot, Settings, Gamepad2, BarChart2, Flag, FolderTree, Radio } from 'lucide-react';
+import { Users, BookOpen, Bot, Settings, Gamepad2, BarChart2, Flag, FolderTree, Radio, ShoppingBag } from 'lucide-react';
 import { adminFetch, Spinner } from './lib/adminUtils.jsx';
 
 // ── Lazy tab imports ───────────────────────────────────────────────────────────
@@ -14,6 +14,7 @@ const ConfigTab     = lazy(() => import('./tabs/ConfigTab.jsx'));
 const ReportsTab    = lazy(() => import('./tabs/ReportsTab.jsx'));
 const BotsTab       = lazy(() => import('./tabs/BotsTab.jsx'));
 const LiveTab       = lazy(() => import('./tabs/LiveTab.jsx'));
+const StoreTab      = lazy(() => import('./tabs/StoreTab.jsx'));
 
 // ── Tab definitions ────────────────────────────────────────────────────────────
 const TABS = [
@@ -26,6 +27,7 @@ const TABS = [
   { id: 'reports',    label: 'Reports',    Icon: Flag },
   { id: 'bots',       label: 'Bots',       Icon: Gamepad2 },
   { id: 'live',       label: 'Live',       Icon: Radio },
+  { id: 'store',      label: 'Store',      Icon: ShoppingBag },
 ];
 
 // ── Login gate ─────────────────────────────────────────────────────────────────
@@ -174,6 +176,7 @@ export default function App() {
         {visitedTabs.has('reports')    && <div style={{ display: activeTab === 'reports'    ? '' : 'none' }}><Suspense fallback={<Spinner />}><ReportsTab    token={token} /></Suspense></div>}
         {visitedTabs.has('bots')       && <div style={{ display: activeTab === 'bots'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><BotsTab       token={token} /></Suspense></div>}
         {visitedTabs.has('live')       && <div style={{ display: activeTab === 'live'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><LiveTab       token={token} /></Suspense></div>}
+        {visitedTabs.has('store')      && <div style={{ display: activeTab === 'store'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><StoreTab      token={token} /></Suspense></div>}
         {visitedTabs.has('categories') && <div style={{ display: activeTab === 'categories' ? '' : 'none' }}><Suspense fallback={<Spinner />}><CategoriesTab token={token} /></Suspense></div>}
       </div>
     </div>

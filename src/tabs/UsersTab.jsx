@@ -2,11 +2,13 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { useToastStore } from '../lib/toastStore';
 import { fmtXp } from '../lib/fmt';
 import { adminFetch, adminUpload, Btn, Spinner, SortableTableHeader, makeSortHandler, multiSort, Paginator } from '../lib/adminUtils.jsx';
+import WalletPanel from '../components/WalletPanel.jsx';
 
 const USER_COLS = [
   { label: 'User',    key: 'username'   },
   { label: 'Email',   key: null         },
   { label: 'XP',      key: 'total_xp'   },
+  { label: 'Coins',   key: 'coins'      },
   { label: 'Joined',  key: 'created_at' },
   { label: 'Actions', key: null         },
 ];
@@ -26,6 +28,7 @@ export default function UsersTab({ token }) {
   const [resetPwdVal, setResetPwdVal] = useState('');
   const [editXpId, setEditXpId] = useState(null);
   const [editXpVal, setEditXpVal] = useState('');
+  const [walletId, setWalletId] = useState(null); // the user whose Wallet panel is open
   const { addToast } = useToastStore();
   const LIMIT = 50;
 
@@ -201,11 +204,16 @@ export default function UsersTab({ token }) {
                     </span>
                   )}
                 </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className="font-bold text-amber-600">{(u.coins ?? 0).toLocaleString()}</span>
+                  {u.plus && <span className="ml-1.5 text-[10px] font-bold text-pink-700 bg-pink-100 rounded px-1 py-0.5">KWIZ+</span>}
+                </td>
                 <td className="px-4 py-3 text-gray-400 text-xs">
                   {new Date(u.created_at).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2 flex-wrap">
+                    <Btn onClick={() => setWalletId(id => (id === u.id ? null : u.id))} variant="primary">Wallet</Btn>
                     <Btn onClick={() => resetXp(u.id, u.username)} variant="ghost">Reset XP</Btn>
                     <Btn
                       onClick={() => {
@@ -228,7 +236,7 @@ export default function UsersTab({ token }) {
               </tr>
               {resetPwdId === u.id && (
                 <tr className="border-b border-gray-100 bg-gray-50">
-                  <td colSpan={5} className="px-4 py-3">
+                  <td colSpan={6} className="px-4 py-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-gray-500 text-xs shrink-0">New password for <span className="text-[#1A1A2E] font-semibold">{u.username}</span>:</span>
                       <input
@@ -249,6 +257,13 @@ export default function UsersTab({ token }) {
                       </Btn>
                       <Btn onClick={() => { setResetPwdId(null); setResetPwdVal(''); }} variant="ghost">Cancel</Btn>
                     </div>
+                  </td>
+                </tr>
+              )}
+              {walletId === u.id && (
+                <tr className="border-b border-gray-100 bg-amber-50/40">
+                  <td colSpan={6} className="px-4 py-4">
+                    <WalletPanel userId={u.id} token={token} onChanged={() => load(page)} />
                   </td>
                 </tr>
               )}
