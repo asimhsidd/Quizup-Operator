@@ -181,6 +181,9 @@ const CONFIG_META = {
   plus_badge_enabled:            { label: 'KWIZ+ badge on profiles',           hint: 'Show the KWIZ+ badge on subscribers\' profiles.', group: 'KWIZ+', toggle: true },
   // ── Store ───────────────────────────────────────────────────────────────────
   billing_enabled:               { label: 'Selling through Google Play — on',  hint: 'Off hides every buy button (the shop and the KWIZ+ paywall stay up). Coin packs are edited in the Store tab; money prices live in Play Console.', group: 'Store', toggle: true },
+  ads_enabled:                   { label: 'Rewarded ads — on',                 hint: '"Watch an ad" for coins in the Shop and the not-enough-coins sheet. Turn on only after the AdMob ad unit\'s server-side verification URL is https://api.kwiz.live/api/ads/ssv, or players watch and get nothing.', group: 'Store', toggle: true },
+  ad_reward_coins:               { label: 'Coins per ad',                      hint: 'Paid when AdMob confirms the ad was watched. Default: 15.', group: 'Store' },
+  ad_daily_cap:                  { label: 'Ads a day per player',              hint: 'Per local day. Default: 5.', group: 'Store' },
   avatar_cartoon_daily_limit:    { label: 'Cartoon portraits a day (anyone)',  hint: 'A safety cap on drawings per player per rolling day. Default: 5.', group: 'Store' },
   // ── AI models (the prices only feed the cost estimates in AI Logs) ──────────
   ai_questions_provider:          { label: 'Questions — provider',               hint: 'deepseek (the DeepSeek API, api-docs.deepseek.com) or together (Together.AI). The model id below must belong to it.', group: 'AI models', text: true },
