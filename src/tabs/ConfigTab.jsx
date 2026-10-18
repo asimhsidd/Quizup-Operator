@@ -153,7 +153,6 @@ const CONFIG_META = {
   streak_milestones:   { label: 'Login streak milestones (JSON)', hint: 'JSON object mapping streak day count to bonus XP, e.g. {"3":50,"7":150,"30":500}', group: 'XP Economy', textarea: true },
   // ── Content ──────────────────────────────────────────────────────────────────
   problem_solving_keywords: { label: 'Problem-Solving Keywords', hint: 'Comma-separated topic keywords that trigger the problem-solving prompt instead of standard trivia (e.g. maths, coding, algebra). Changes take effect on the next generation.', group: 'Content', textarea: true },
-  ingame_reaction_emojis: { label: 'In-Game Reaction Emojis',   hint: 'Comma-separated emoji set shown to players during multiplayer matches (e.g. 🔥,😂,👏,😤,💀,🎯)', group: 'Content', text: true },
   // ── Lifelines (priced in coins; XP is never spent) ──────────────────────────
   lifeline_5050_enabled:        { label: '50/50 lifeline — enabled',        hint: 'Show the 50/50 lifeline (removes 2 wrong answers).', group: 'Lifelines', toggle: true },
   lifeline_shield_enabled:      { label: 'Shield lifeline — enabled',       hint: 'Show the Shield lifeline (a wrong answer counts as right once).', group: 'Lifelines', toggle: true },
