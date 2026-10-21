@@ -768,7 +768,7 @@ export default function TopicsTab({ token }) {
   );
 
   return (
-    <div className="flex flex-col md:flex-row" style={{ height: 'calc(100vh - 98px)' }}>
+    <div className="flex flex-col md:flex-row" style={{ height: 'calc(100dvh - 72px)' }}>
       {/* Left panel — full width on mobile, 30% on desktop */}
       <div className={`border-r border-[#E0E0E0] flex flex-col bg-white
         md:w-[30%] md:min-w-[200px]
