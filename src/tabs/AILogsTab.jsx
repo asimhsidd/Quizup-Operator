@@ -225,8 +225,8 @@ function RawResponseModal({ logId, topicName, initialRaw, token, onClose, onSucc
         {/* Body */}
         <div className="flex-1 overflow-auto px-5 py-4 flex flex-col gap-3">
           <p className="text-xs text-gray-500">
-            Edit the JSON below to fix any formatting issues, then click <strong>Retry Parse</strong>.
-            The server will re-validate and insert all valid questions.
+            This is the manual fallback for a response that automatic AI repair could not resolve.
+            Edit the JSON below, then click <strong>Validate &amp; insert</strong>.
           </p>
           {/* Editor: gutter + textarea */}
           {(() => {
@@ -312,7 +312,7 @@ function RawResponseModal({ logId, topicName, initialRaw, token, onClose, onSucc
               onClick={handleRetry}
               disabled={saving || !raw.trim() || !!lintError || (preview !== null && preview.valid === 0)}
             >
-              {saving ? 'Retrying…' : `Retry Parse${preview?.valid > 0 ? ` (${preview.valid}q)` : ''}`}
+              {saving ? 'Inserting…' : `Validate & insert${preview?.valid > 0 ? ` (${preview.valid}q)` : ''}`}
             </Btn>
           </div>
         </div>
@@ -325,8 +325,8 @@ function RawResponseModal({ logId, topicName, initialRaw, token, onClose, onSucc
 function FailedTopicsWidget({ token, onLogFixed }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(null); // { logId, topicName, raw }
   const [ignoring, setIgnoring] = useState(null); // logId being ignored
+  const [repairing, setRepairing] = useState(null); // logId being repaired by AI
   const { addToast } = useToastStore();
 
   async function load() {
@@ -340,7 +340,16 @@ function FailedTopicsWidget({ token, onLogFixed }) {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    function onLogUpdated(log) {
+      if (log.success === true || !log.raw_response) {
+        setItems(prev => prev.filter(item => item.id !== log.id));
+      }
+    }
+    socket.on('admin_log_updated', onLogUpdated);
+    return () => socket.off('admin_log_updated', onLogUpdated);
+  }, []);
 
   function handleFixed(logId) {
     setItems(prev => prev.filter(i => i.id !== logId));
@@ -359,6 +368,19 @@ function FailedTopicsWidget({ token, onLogFixed }) {
     }
   }
 
+  async function handleAiRepair(item) {
+    setRepairing(item.id);
+    try {
+      const data = await adminFetch(`/admin/ai-logs/${item.id}/repair`, { method: 'POST' }, token);
+      handleFixed(item.id);
+      addToast(`AI repaired and inserted ${data.inserted} questions for "${item.topic_name}"`, 'success');
+    } catch (err) {
+      addToast(err.message, 'error');
+    } finally {
+      setRepairing(null);
+    }
+  }
+
   if (loading) return null;
   if (items.length === 0) return null;
 
@@ -366,9 +388,12 @@ function FailedTopicsWidget({ token, onLogFixed }) {
     <>
       <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl p-4">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-red-600 text-sm font-extrabold">⚠ Topics with Generation Failures</span>
+          <span className="text-red-600 text-sm font-extrabold">⚠ Automatic Repair Queue</span>
           <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">{items.length}</span>
         </div>
+        <p className="text-xs text-red-600 mb-3">
+          The backend repairs, validates and applies these without approval. Retry AI is only an optional immediate re-run.
+        </p>
         <div className="flex flex-col gap-2">
           {items.map(item => (
             <div key={item.id} className="bg-white border border-red-100 rounded-xl px-4 py-3 flex items-center gap-3 flex-wrap">
@@ -384,27 +409,17 @@ function FailedTopicsWidget({ token, onLogFixed }) {
                 {ignoring === item.id ? 'Ignoring…' : 'Ignore'}
               </Btn>
               <Btn
-                variant="danger"
-                onClick={() => setEditing({ logId: item.id, topicName: item.topic_name, raw: item.raw_response || '' })}
+                variant="primary"
+                disabled={repairing === item.id}
+                onClick={() => handleAiRepair(item)}
               >
-                Fix
+                {repairing === item.id ? 'AI repairing…' : 'Retry AI'}
               </Btn>
             </div>
           ))}
         </div>
       </div>
 
-      {editing && (
-        <RawResponseModal
-          logId={editing.logId}
-          topicName={editing.topicName}
-          initialRaw={editing.raw}
-          token={token}
-          onClose={() => setEditing(null)}
-          onSuccess={handleFixed}
-          onIgnore={handleIgnore}
-        />
-      )}
     </>
   );
 }
