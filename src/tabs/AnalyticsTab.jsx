@@ -100,6 +100,122 @@ function FunnelSection({ token, refreshKey }) {
   );
 }
 
+// ── Social ────────────────────────────────────────────────────────────────────
+// The people-first numbers (GET /admin/analytics/social; Quizup docs/social-plan.md, Phase 5).
+// Rematch rate: of the pairs who finished a game, the share where the player challenged that
+// same opponent again within 7 days. Challenges by source: where each challenge was sent
+// from; acceptance counts only challenges to people (bots always say yes).
+const SOURCE_LABELS = {
+  discover: 'Discover', rivals: 'Rivals tab', home: 'Home next moves', results: 'Results',
+  profile: 'Profile', menu: 'Player menu', notification: 'Notification', picker: 'Player picker',
+  nearby: 'Near you (picker)', feed: 'Feed', invite: 'Invite', unknown: 'Before tracking',
+};
+const pctOf = (n, d) => (d > 0 ? `${((n / d) * 100).toFixed(0)}%` : '—');
+
+function SocialSection({ token, refreshKey }) {
+  const [days, setDays] = useState(30);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let live = true;
+    setError(null);
+    adminFetch(`/admin/analytics/social?days=${days}`, {}, token)
+      .then(d => { if (live) setData(d); })
+      .catch(err => { if (live) setError(err.message); });
+    return () => { live = false; };
+  }, [days, token, refreshKey]);
+
+  const r = data?.rematch;
+  const rows = (data?.sources ?? []).map(x => ({
+    ...x,
+    label: SOURCE_LABELS[x.source] ?? x.source,
+    decided: x.accepted + x.declined + x.ignored,
+  }));
+
+  return (
+    <>
+      <SectionHeading>Social</SectionHeading>
+      <div className="bg-white border border-[#E0E0E0] shadow-sm rounded-xl p-4 mb-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-gray-400 text-xs">Games and challenges in the last {days} days, by people (bots excluded as the player)</div>
+          <div className="flex gap-1 shrink-0">
+            {[7, 30, 90].map(d => (
+              <button key={d} onClick={() => setDays(d)}
+                className={`text-xs font-semibold px-2.5 py-1 rounded-lg border ${days === d ? 'bg-[#1A1A2E] text-white border-[#1A1A2E]' : 'bg-white text-gray-600 border-[#E0E0E0]'}`}>
+                {d}d
+              </button>
+            ))}
+          </div>
+        </div>
+        {error && <div className="text-red-500 text-sm">Couldn't load the social numbers: {error}</div>}
+        {!error && !data && <Spinner />}
+        {data && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <StatCard label="Rematch rate" accent="text-[#E8453C]"
+                value={pctOf(r.all.rematched, r.all.due)}
+                sub={`${r.all.rematched} of ${r.all.due} pairs challenged again within ${data.rematchDays} days`} />
+              <StatCard label="vs people" value={pctOf(r.people.rematched, r.people.due)}
+                sub={`${r.people.rematched} of ${r.people.due} pairs`} />
+              <StatCard label="vs bots" value={pctOf(r.bots.rematched, r.bots.due)}
+                sub={`${r.bots.rematched} of ${r.bots.due} pairs`} />
+            </div>
+            <div className="text-gray-400 text-xs -mt-2">
+              Only games at least {data.rematchDays} days old count; {r.all.pairs - r.all.due} newer pairs aren't due yet.
+            </div>
+
+            <div>
+              <div className="text-[#1A1A2E] font-semibold text-sm mb-2">Challenges to people, by where they were sent from</div>
+              {rows.length === 0 ? (
+                <div className="text-center text-gray-400 text-sm py-6">No challenges in this period</div>
+              ) : (
+                <>
+                  <ResponsiveContainer width="100%" height={Math.max(120, rows.length * 34 + 40)}>
+                    <BarChart data={rows} layout="vertical" margin={{ top: 0, right: 12, left: 8, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" horizontal={false} />
+                      <XAxis type="number" tick={{ fontSize: 10, fill: '#9CA3AF' }} allowDecimals={false} />
+                      <YAxis type="category" dataKey="label" width={130} tick={{ fontSize: 11, fill: '#4B5563' }} />
+                      <Tooltip {...CHART_TOOLTIP_STYLE} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Bar dataKey="accepted" stackId="a" fill="#16A34A" name="Accepted" />
+                      <Bar dataKey="declined" stackId="a" fill="#E8453C" name="Declined" />
+                      <Bar dataKey="ignored"  stackId="a" fill="#9CA3AF" name="Ignored (expired)" />
+                      <Bar dataKey="waiting"  stackId="a" fill="#F59E0B" name="Still open" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <table className="w-full text-xs mt-3">
+                    <thead>
+                      <tr className="text-gray-500 text-left">
+                        <th className="font-semibold py-1">Source</th>
+                        <th className="font-semibold py-1 text-right">Sent</th>
+                        <th className="font-semibold py-1 text-right">To people</th>
+                        <th className="font-semibold py-1 text-right">Acceptance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map(x => (
+                        <tr key={x.source} className="border-t border-[#F0F0F0]">
+                          <td className="py-1 text-[#1A1A2E]">{x.label}</td>
+                          <td className="py-1 text-right tabular-nums">{x.sent}</td>
+                          <td className="py-1 text-right tabular-nums">{x.to_people}</td>
+                          <td className="py-1 text-right tabular-nums" title="Accepted, of the ones answered or expired">
+                            {pctOf(x.accepted, x.decided)}{x.decided > 0 ? ` (${x.accepted}/${x.decided})` : ''}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ── Tab: Analytics (includes Live Sessions) ───────────────────────────────────
 export default function AnalyticsTab({ token }) {
   const [data, setData] = useState({
@@ -258,6 +374,7 @@ export default function AnalyticsTab({ token }) {
           </div>
 
           <FunnelSection token={token} refreshKey={lastRefreshed?.getTime()} />
+          <SocialSection token={token} refreshKey={lastRefreshed?.getTime()} />
 
           {/* ── Section 3: Retention & Engagement ──────────────────────────── */}
           <SectionHeading>Retention & Engagement</SectionHeading>
