@@ -1,39 +1,61 @@
 import { useEffect, useState } from 'react';
-import { adminFetch } from '../lib/adminUtils.jsx';
+import { adminFetch, Paginator } from '../lib/adminUtils.jsx';
+import { useToastStore } from '../lib/toastStore';
+
+const LIMIT = 50;
 
 export default function ReportsTab({ token }) {
   const [reports, setReports] = useState([]);
-  const [, setTotal]     = useState(0);
+  const [total, setTotal]     = useState(0);
   const [status, setStatus]   = useState('pending');
+  const [page, setPage]       = useState(0);
   const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState('');
+  const [busyId, setBusyId]   = useState(null);
+  const { addToast } = useToastStore();
 
-  async function load(s = status) {
+  async function load(s = status, p = page) {
     setLoading(true);
     try {
-      const data = await adminFetch(`/admin/reports?status=${s}&limit=50`, {}, token);
+      const data = await adminFetch(`/admin/reports?status=${s}&limit=${LIMIT}&offset=${p * LIMIT}`, {}, token);
       setReports(data.reports ?? []);
       setTotal(data.total ?? 0);
-    } catch {}
+      setError('');
+    } catch (err) {
+      setError(err.message || 'Reports did not load');
+    }
     setLoading(false);
   }
 
   useEffect(() => { load(); }, []);
 
   async function updateStatus(id, newStatus) {
-    await adminFetch(`/admin/reports/${id}`, { method: 'PUT', body: { status: newStatus } }, token);
-    setReports(prev => prev.filter(r => r.id !== id));
-    setTotal(t => Math.max(0, t - 1));
+    setBusyId(id);
+    try {
+      await adminFetch(`/admin/reports/${id}`, { method: 'PUT', body: { status: newStatus } }, token);
+      setReports(prev => prev.filter(r => r.id !== id));
+      setTotal(t => Math.max(0, t - 1));
+    } catch (err) {
+      addToast(`Report not updated: ${err.message}`, 'error');
+    }
+    setBusyId(null);
   }
 
   function switchStatus(s) {
     setStatus(s);
-    load(s);
+    setPage(0);
+    load(s, 0);
+  }
+
+  function goToPage(p) {
+    setPage(p);
+    load(status, p);
   }
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-[#1A1A2E]">User Reports</h2>
+        <h2 className="text-lg font-bold text-[#1A1A2E]">User Reports{total > 0 && <span className="text-gray-400 font-semibold"> ({total})</span>}</h2>
         <div className="flex gap-2">
           {['pending', 'reviewed', 'dismissed'].map(s => (
             <button
@@ -48,6 +70,12 @@ export default function ReportsTab({ token }) {
         </div>
       </div>
 
+      {error && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span>{error}</span>
+          <button onClick={() => load()} className="font-bold underline">Retry</button>
+        </div>
+      )}
       {loading ? (
         <div className="text-center py-12 text-gray-400">Loading…</div>
       ) : reports.length === 0 ? (
@@ -111,14 +139,16 @@ export default function ReportsTab({ token }) {
                 <div className="flex gap-2 mt-3">
                   <button
                     onClick={() => updateStatus(r.id, 'reviewed')}
-                    className="flex-1 py-2 rounded-lg text-xs font-bold text-white transition-colors"
+                    disabled={busyId === r.id}
+                    className="disabled:opacity-50 flex-1 py-2 rounded-lg text-xs font-bold text-white transition-colors"
                     style={{ background: '#22C55E' }}
                   >
                     Mark Reviewed
                   </button>
                   <button
                     onClick={() => updateStatus(r.id, 'dismissed')}
-                    className="flex-1 py-2 rounded-lg text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                    disabled={busyId === r.id}
+                    className="disabled:opacity-50 flex-1 py-2 rounded-lg text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
                   >
                     Dismiss
                   </button>
@@ -126,6 +156,11 @@ export default function ReportsTab({ token }) {
               )}
             </div>
           ))}
+          {total > LIMIT && (
+            <div className="bg-white rounded-xl border border-[#E0E0E0]">
+              <Paginator page={page} total={total} limit={LIMIT} onPage={goToPage} />
+            </div>
+          )}
         </div>
       )}
     </div>

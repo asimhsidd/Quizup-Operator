@@ -132,86 +132,8 @@ function RanksEditor({ token }) {
 }
 
 // ── Tab: Config ───────────────────────────────────────────────────────────────
-const CONFIG_META = {
-  rounds:              { label: 'Rounds per game',              hint: 'Number of questions per match (1–20)', group: 'Gameplay' },
-  time_limit:          { label: 'Time limit (seconds)',          hint: 'Seconds allowed per question (5–60)', group: 'Gameplay' },
-  score_max_points:    { label: 'Max points per question',       hint: 'Points awarded for an instant correct answer (e.g. 10). Scales down with response time.', group: 'Gameplay' },
-  score_min_points:    { label: 'Min points per question',       hint: 'Minimum points for a correct but slow answer (e.g. 2). Must be less than max.', group: 'Gameplay' },
-  questions_per_batch: { label: 'Questions per AI batch',        hint: 'How many questions to generate per AI call (50–200)', group: 'Gameplay' },
-  // ── Multiplayer XP ──────────────────────────────────────────────────────────
-  finish_bonus:        { label: 'Finish bonus XP',              hint: 'XP awarded to each player for completing a multiplayer game', group: 'XP Economy' },
-  victory_bonus:       { label: 'Victory bonus XP',             hint: 'Extra XP for winning a multiplayer game', group: 'XP Economy' },
-  close_match_bonus:   { label: 'Close match bonus XP',         hint: 'Bonus XP for both players when score difference is ≤ 5 in a decisive match', group: 'XP Economy' },
-  win_streak_bonus:    { label: 'Win streak bonus XP (per level)', hint: 'XP awarded per streak level to the winner (e.g. 10 × streak, capped at 5×)', group: 'XP Economy' },
-  accuracy_bonus:      { label: 'Accuracy bonus XP',            hint: 'Bonus XP when a player answers ≥ 80% of questions correctly in multiplayer', group: 'XP Economy' },
-  // ── Solo XP ─────────────────────────────────────────────────────────────────
-  solo_finish_bonus:   { label: 'Solo finish bonus XP',         hint: 'XP awarded for completing a solo game', group: 'XP Economy' },
-  solo_perfect_bonus:  { label: 'Solo perfect bonus XP',        hint: 'Extra XP in solo mode for a perfect score (max points on every question)', group: 'XP Economy' },
-  solo_speed_bonus:    { label: 'Solo speed bonus XP',          hint: 'Bonus XP in solo mode when average response time is under 5 seconds', group: 'XP Economy' },
-  // ── Daily challenge XP ───────────────────────────────────────────────────────
-  // ── Login streaks ────────────────────────────────────────────────────────────
-  streak_milestones:   { label: 'Login streak milestones (JSON)', hint: 'JSON object mapping streak day count to bonus XP, e.g. {"3":50,"7":150,"30":500}', group: 'XP Economy', textarea: true },
-  // ── Content ──────────────────────────────────────────────────────────────────
-  problem_solving_keywords: { label: 'Problem-Solving Keywords', hint: 'Comma-separated topic keywords that trigger the problem-solving prompt instead of standard trivia (e.g. maths, coding, algebra). Changes take effect on the next generation.', group: 'Content', textarea: true },
-  // ── Lifelines (priced in coins; XP is never spent) ──────────────────────────
-  lifeline_5050_enabled:        { label: '50/50 lifeline — enabled',        hint: 'Show the 50/50 lifeline (removes 2 wrong answers).', group: 'Lifelines', toggle: true },
-  lifeline_shield_enabled:      { label: 'Shield lifeline — enabled',       hint: 'Show the Shield lifeline (a wrong answer counts as right once).', group: 'Lifelines', toggle: true },
-  lifeline_scoreheist_enabled:  { label: 'Score Heist lifeline — enabled',  hint: 'Show Score Heist (steals 30% of the opponent\'s score on a right answer; a wrong one costs the same stake from your own match score).', group: 'Lifelines', toggle: true },
-  lifeline_doubledip_enabled:   { label: 'Double Dip lifeline — enabled',   hint: 'Show Double Dip (2× points for a right answer this round).', group: 'Lifelines', toggle: true },
-  lifeline_5050_coins:          { label: '50/50 — price in coins',          hint: 'Coins taken when 50/50 is used. Default: 20.', group: 'Lifelines' },
-  lifeline_shield_coins:        { label: 'Shield — price in coins',         hint: 'Coins taken when Shield is used. Default: 30.', group: 'Lifelines' },
-  lifeline_scoreheist_coins:    { label: 'Score Heist — price in coins',    hint: 'Coins taken to arm the heist. Default: 40.', group: 'Lifelines' },
-  lifeline_doubledip_coins:     { label: 'Double Dip — price in coins',     hint: 'Coins taken when Double Dip is used. Default: 25.', group: 'Lifelines' },
-  // ── Coins ───────────────────────────────────────────────────────────────────
-  coins_starting_grant:   { label: 'Starting coins',                 hint: 'Coins every new account gets once, at sign-up. Default: 150.', group: 'Coins' },
-  mission_daily_coins:    { label: 'Daily mission reward (coins)',   hint: 'Coins per claimed daily mission, on top of its XP. Default: 10.', group: 'Coins' },
-  mission_weekly_coins:   { label: 'Weekly mission reward (coins)',  hint: 'Coins per claimed weekly mission, on top of its XP. Default: 50.', group: 'Coins' },
-  reward_track_coins:     { label: 'Daily reward track (coins, JSON)', hint: 'Coins for day 1…7 of the login reward track, e.g. [10,10,15,15,20,25,60]. Missing days pay none.', group: 'Coins', text: true },
-  live_win_coins:         { label: 'KWIZ Live win (coins)',          hint: 'Coins each Live winner gets, on top of the XP prize. Default: 100.', group: 'Coins' },
-  referral_coins:         { label: 'Invite reward (coins)',          hint: 'Coins for each side when an invited friend finishes their first match. Default: 100.', group: 'Coins' },
-  live_extra_life_coins:  { label: 'Live extra life (coins)',        hint: 'Price of an extra KWIZ Live life, bought in the lobby. Unused ones are refunded. Default: 50.', group: 'Coins' },
-  live_max_bought_lives:  { label: 'Live extra lives a player may buy', hint: 'Per event. 0 turns buying lives off. Default: 1.', group: 'Coins' },
-  // ── KWIZ+ ───────────────────────────────────────────────────────────────────
-  plus_enabled:                  { label: 'KWIZ+ — on',                        hint: 'Off: nobody gets KWIZ+ benefits and the paywall is hidden (subscriptions keep running in Play).', group: 'KWIZ+', toggle: true },
-  plus_custom_topics_monthly:    { label: 'Brand-new AI topics a month',       hint: 'New custom topics (each one an AI generation) a KWIZ+ player may create per local month. Finding an existing topic is free for everyone. Default: 10.', group: 'KWIZ+' },
-  plus_avatars_monthly:          { label: 'Cartoon portraits a month',         hint: 'Comic portraits after the free first one, per local month. Default: 5.', group: 'KWIZ+' },
-  plus_free_lifelines_per_match: { label: 'Free lifelines each match',         hint: 'Lifelines that cost no coins in each game. Default: 1.', group: 'KWIZ+' },
-  plus_live_lives_per_event:     { label: 'Extra lives each KWIZ Live',        hint: 'Used after the weekly free life, before bought ones. Default: 1.', group: 'KWIZ+' },
-  plus_daily_coins:              { label: 'Daily coins',                       hint: 'Coins a KWIZ+ player collects once a local day (the Shop). Default: 30.', group: 'KWIZ+' },
-  plus_badge_enabled:            { label: 'KWIZ+ badge on profiles',           hint: 'Show the KWIZ+ badge on subscribers\' profiles.', group: 'KWIZ+', toggle: true },
-  // ── Store ───────────────────────────────────────────────────────────────────
-  billing_enabled:               { label: 'Selling through Google Play — on',  hint: 'Off hides every buy button (the shop and the KWIZ+ paywall stay up). Coin packs are edited in the Store tab; money prices live in Play Console.', group: 'Store', toggle: true },
-  ads_enabled:                   { label: 'Rewarded ads — on',                 hint: 'Every "Watch an ad" offer: coins, lifelines, Reveal, Second chance, streak saver, mission swap, coin jar, KWIZ+ day, new topic, Live life. Turn on only after the AdMob ad unit\'s server-side verification URL is https://api.kwiz.live/api/ads/ssv, or players watch and get nothing.', group: 'Store', toggle: true },
-  ad_reward_coins:               { label: 'Coins per ad',                      hint: 'Paid when AdMob confirms the ad was watched. Default: 15.', group: 'Store' },
-  ad_daily_cap:                  { label: 'Coin ads a day per player',         hint: 'Per local day, for the ads that pay coins (Watch an ad, Double it). The other ad rewards have their own limits below. Default: 10.', group: 'Store' },
-  ad_streak_min:                 { label: 'Streak saver: shortest streak',     hint: 'A login streak at least this long that breaks (after at most two missed days) can be kept with an ad, that day. Default: 3.', group: 'Store' },
-  ad_streak_every_days:          { label: 'Streak saver: once every (days)',   hint: 'Default: 7.', group: 'Store' },
-  coin_jar_per_game:             { label: 'Coin jar: coins per game',          hint: 'Dropped in the jar by every finished match or solo game; an ad cashes the jar. 0 stops filling it. Default: 3.', group: 'Store' },
-  coin_jar_cap:                  { label: 'Coin jar: holds up to',             hint: 'Default: 60.', group: 'Store' },
-  coin_jar_min:                  { label: 'Coin jar: cash from',               hint: 'The jar can be cashed once it holds this much. Default: 15.', group: 'Store' },
-  ad_plus_day_ads:               { label: 'KWIZ+ day: ads needed',             hint: 'Ads in one local day that unlock KWIZ+ for a while, for players who have never subscribed. Default: 3.', group: 'Store' },
-  ad_plus_day_hours:             { label: 'KWIZ+ day: hours',                  hint: 'Default: 24.', group: 'Store' },
-  ad_plus_day_every_days:        { label: 'KWIZ+ day: once every (days)',      hint: 'Default: 30.', group: 'Store' },
-  ad_topic_ads:                  { label: 'New topic for ads: ads needed',     hint: 'Ads that unlock one brand-new AI topic for a player without KWIZ+, once a local day. Default: 2.', group: 'Store' },
-  ad_live_lives:                 { label: 'KWIZ Live lives for an ad',         hint: 'Per event, before the start. Not refunded (they cost nothing). 0 turns them off. Default: 1.', group: 'Store' },
-  avatar_cartoon_daily_limit:    { label: 'Cartoon portraits a day (anyone)',  hint: 'A safety cap on drawings per player per rolling day. Default: 5.', group: 'Store' },
-  // ── AI models (the prices only feed the cost estimates in AI Logs) ──────────
-  ai_questions_provider:          { label: 'Questions — provider',               hint: 'deepseek (the DeepSeek API, api-docs.deepseek.com) or together (Together.AI). The model id below must belong to it.', group: 'AI models', text: true },
-  ai_questions_model:             { label: 'Questions — model',                  hint: 'Model id that writes topic questions, e.g. deepseek-flash. On Together it must be a serverless model (together.ai/models). Takes effect on the next generation.', group: 'AI models', text: true },
-  ai_questions_input_usd_per_m:   { label: 'Questions — input price (US$ / 1M tokens)',  hint: 'From the provider\'s pricing page. DeepSeek: use the peak rate (off-peak is half).', group: 'AI models' },
-  ai_questions_output_usd_per_m:  { label: 'Questions — output price (US$ / 1M tokens)', hint: 'From the provider\'s pricing page. DeepSeek: use the peak rate (off-peak is half).', group: 'AI models' },
-  ai_categorise_provider:         { label: 'Categorisation — provider',          hint: 'deepseek or together. The model id below must belong to it.', group: 'AI models', text: true },
-  ai_categorise_model:            { label: 'Categorisation — model',             hint: 'Model id that files new topics into categories, e.g. deepseek-flash.', group: 'AI models', text: true },
-  ai_categorise_input_usd_per_m:  { label: 'Categorisation — input price (US$ / 1M tokens)',  hint: 'From the provider\'s pricing page. DeepSeek: the peak rate.', group: 'AI models' },
-  ai_categorise_output_usd_per_m: { label: 'Categorisation — output price (US$ / 1M tokens)', hint: 'From the provider\'s pricing page. DeepSeek: the peak rate.', group: 'AI models' },
-  ai_validation_model:            { label: 'Validation — model (Gemini)',        hint: 'Google Gemini model id that fact-checks answers, e.g. gemini-2.5-flash-lite.', group: 'AI models', text: true },
-  ai_validation_input_usd_per_m:  { label: 'Validation — input price (US$ / 1M tokens)',  hint: 'From Google\'s Gemini API pricing page.', group: 'AI models' },
-  ai_validation_output_usd_per_m: { label: 'Validation — output price (US$ / 1M tokens)', hint: 'Includes thinking tokens. From Google\'s Gemini API pricing page.', group: 'AI models' },
-  ai_avatar_model:                { label: 'Cartoon portraits — model',          hint: 'Together.AI image model that draws profile pictures. It must accept reference images (the player\'s photo).', group: 'AI models', text: true },
-  ai_avatar_usd_per_image:        { label: 'Cartoon portraits — price per picture (US$)', hint: 'At 1024×1024. From the model\'s Together.AI page.', group: 'AI models' },
-};
-
-const CONFIG_GROUP_ORDER = ['Gameplay', 'XP Economy', 'Coins', 'Lifelines', 'KWIZ+', 'Store', 'Content', 'AI models'];
+// Labels, hints, groups and allowed values come from the KWIZ API with each key
+// (Quizup backend/services/configSchema.js), which also checks every value saved.
 
 export default function ConfigTab({ token }) {
   const [config, setConfig] = useState([]);
@@ -238,7 +160,7 @@ export default function ConfigTab({ token }) {
     setSaving(s => ({ ...s, [key]: true }));
     try {
       await adminFetch('/admin/config', { method: 'PUT', body: { key, value: editing[key] } }, token);
-      addToast(`${CONFIG_META[key]?.label ?? key} updated`, 'success');
+      addToast(`${config.find(c => c.key === key)?.meta?.label ?? key} updated`, 'success');
       setEditing(e => { const n = { ...e }; delete n[key]; return n; });
       load();
     } catch (err) {
@@ -250,20 +172,19 @@ export default function ConfigTab({ token }) {
 
   if (loading) return <Spinner />;
 
-  // Group config entries by their meta group
+  // Group the keys; the API sends them in schema order, so groups keep that order
   const byGroup = {};
-  config.filter(c => c.key !== 'xp_ranks').forEach(entry => {
-    const meta = CONFIG_META[entry.key] ?? { label: entry.key, hint: '' };
-    const g = meta.group ?? 'Other';
-    if (!byGroup[g]) byGroup[g] = [];
-    byGroup[g].push({ ...entry, meta });
+  config.filter(c => c.meta?.input !== 'ranks').forEach(entry => {
+    const meta = entry.meta?.label ? entry.meta : { label: entry.key, hint: '', input: 'text', group: 'Other' };
+    (byGroup[meta.group] ??= []).push({ ...entry, meta });
   });
-  const groupOrder = [...CONFIG_GROUP_ORDER, ...Object.keys(byGroup).filter(g => !CONFIG_GROUP_ORDER.includes(g))];
+  const groupOrder = Object.keys(byGroup);
 
-  function ConfigCard({ entry: { key, value, is_default, updated_at, meta } }) {
+  function ConfigCard({ entry }) {
+    const { key, value, is_default, updated_at, meta } = entry;
     const draft = editing[key] ?? value;
     const isDirty = editing[key] !== undefined && editing[key] !== value;
-    const isWide = meta.textarea || meta.text;
+    const isWide = meta.input === 'textarea' || meta.input === 'text';
     return (
       <div className={`bg-white border border-[#E0E0E0] shadow-sm rounded-xl p-4 flex flex-col gap-2 ${isWide ? 'col-span-2' : ''}`}>
         <div className="flex items-start justify-between gap-2">
@@ -279,7 +200,7 @@ export default function ConfigTab({ token }) {
           </div>
         </div>
         <div className={`flex gap-2 ${isWide ? 'flex-col items-start' : 'items-center'}`}>
-          {meta.toggle ? (
+          {meta.input === 'toggle' ? (
             <label className="flex items-center gap-3 cursor-pointer select-none">
               <button
                 role="switch"
@@ -310,7 +231,7 @@ export default function ConfigTab({ token }) {
                 {saving[key] ? 'Saving…' : draft === 'true' ? 'Enabled' : 'Disabled'}
               </span>
             </label>
-          ) : meta.textarea ? (
+          ) : meta.input === 'textarea' ? (
             <textarea
               value={draft}
               rows={3}
@@ -318,7 +239,7 @@ export default function ConfigTab({ token }) {
               className="bg-gray-50 border border-[#E0E0E0] text-[#1A1A2E] rounded-lg px-3 py-2
                          text-sm w-full focus:outline-none focus:border-[#E8453C] resize-y font-mono"
             />
-          ) : meta.text ? (
+          ) : meta.input === 'text' ? (
             <input
               type="text"
               value={draft}
@@ -329,7 +250,9 @@ export default function ConfigTab({ token }) {
           ) : (
             <input
               type="number"
-              step="any"
+              step={meta.type === 'int' ? 1 : 'any'}
+              min={meta.min}
+              max={meta.max}
               value={draft}
               onChange={e => setEditing(ed => ({ ...ed, [key]: e.target.value }))}
               className="bg-gray-50 border border-[#E0E0E0] text-[#1A1A2E] rounded-lg px-3 py-2
@@ -347,6 +270,9 @@ export default function ConfigTab({ token }) {
             </div>
           )}
         </div>
+        {meta.type === 'int' || meta.type === 'number'
+          ? <div className="text-gray-400 text-xs">Allowed: {meta.min}–{meta.max}{!is_default && <> · default {entry.default}</>}</div>
+          : !is_default && entry.default && meta.input !== 'textarea' && <div className="text-gray-400 text-xs truncate">Default: {entry.default}</div>}
         {!is_default && updated_at && (
           <div className="text-gray-400 text-xs">Last updated: {new Date(updated_at).toLocaleString()}</div>
         )}

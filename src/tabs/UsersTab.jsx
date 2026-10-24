@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useToastStore } from '../lib/toastStore';
 import { fmtXp } from '../lib/fmt';
-import { adminFetch, adminUpload, Btn, Spinner, SortableTableHeader, makeSortHandler, multiSort, Paginator } from '../lib/adminUtils.jsx';
+import { adminFetch, adminUpload, Btn, SortableTableHeader, makeSortHandler, multiSort, Paginator } from '../lib/adminUtils.jsx';
 import WalletPanel from '../components/WalletPanel.jsx';
 
 const USER_COLS = [
@@ -32,17 +32,15 @@ export default function UsersTab({ token }) {
   const { addToast } = useToastStore();
   const LIMIT = 50;
 
+  // Search and the bot filter run on the server, across every player, not just this page
   async function load(p = page) {
     setLoading(true);
     try {
-      const data = await adminFetch(`/admin/users?limit=${LIMIT}&offset=${p * LIMIT}`, {}, token);
-      if (Array.isArray(data)) {
-        setUsers(data);
-        setTotal(data.length < LIMIT && p === 0 ? data.length : (p + 1) * LIMIT + (data.length === LIMIT ? 1 : 0));
-      } else {
-        setUsers(data.users ?? data);
-        setTotal(data.total ?? (data.users ?? data).length);
-      }
+      const qs = new URLSearchParams({ limit: LIMIT, offset: p * LIMIT, search: search.trim() });
+      if (hideBots) qs.set('bots', 'hide');
+      const data = await adminFetch(`/admin/users?${qs}`, {}, token);
+      setUsers(data.users);
+      setTotal(data.total);
     } catch (err) {
       addToast(err.message, 'error');
     } finally {
@@ -50,13 +48,18 @@ export default function UsersTab({ token }) {
     }
   }
 
-  useEffect(() => { load(0); }, []);
+  useEffect(() => { load(page); }, [page]);
 
+  // A new search or filter starts again at page 1 (debounced while typing)
+  const filtersSeen = useRef(false);
   useEffect(() => {
-    load(page);
-  }, [page]);
+    if (!filtersSeen.current) { filtersSeen.current = true; return; } // the page effect did the first load
+    const t = setTimeout(() => { if (page === 0) load(0); else setPage(0); }, 300);
+    return () => clearTimeout(t);
+  }, [search, hideBots]);
 
   async function deleteUser(id, username) {
+    if (!confirm(`Delete ${username} permanently?\n\nTheir account, chats, posts and wallet go. Opponents keep their match history. This can't be undone.`)) return;
     try {
       await adminFetch(`/admin/users/${id}`, { method: 'DELETE' }, token);
       addToast(`Deleted ${username}`, 'success');
@@ -117,17 +120,8 @@ export default function UsersTab({ token }) {
     }
   }
 
-  if (loading) return <Spinner />;
-
-  const botCount = users.filter(u => u.is_bot).length;
-  const afterBotFilter = hideBots ? users.filter(u => !u.is_bot) : users;
-  const afterSearch = search.trim()
-    ? afterBotFilter.filter(u =>
-        u.username?.toLowerCase().includes(search.toLowerCase()) ||
-        u.email?.toLowerCase().includes(search.toLowerCase())
-      )
-    : afterBotFilter;
-  const visibleUsers = multiSort(afterSearch, userSortKeys);
+  // Sorting reorders the page on screen; the server pages newest first
+  const visibleUsers = multiSort(users, userSortKeys);
 
   return (
     <div>
@@ -139,7 +133,7 @@ export default function UsersTab({ token }) {
         onChange={e => { changeAvatar(e.target.files[0]); e.target.value = ''; }}
       />
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[#1A1A2E] font-bold text-lg">Users ({visibleUsers.length}{botCount > 0 && hideBots ? ` · ${botCount} bots hidden` : ''})</h2>
+        <h2 className="text-[#1A1A2E] font-bold text-lg">Users ({total.toLocaleString()}{hideBots ? ', bots hidden' : ''})</h2>
         <div className="flex items-center gap-3">
           <input
             type="text"
@@ -161,6 +155,7 @@ export default function UsersTab({ token }) {
         </div>
       </div>
       <div className="overflow-x-auto bg-white border border-[#E0E0E0] rounded-xl shadow-sm">
+        {loading && <div className="h-0.5 bg-cyan-500/60 animate-pulse" />}
         <table className="w-full text-sm">
           <SortableTableHeader columns={USER_COLS} sortKeys={userSortKeys} onSort={handleUserSort} />
           <tbody>
@@ -271,7 +266,7 @@ export default function UsersTab({ token }) {
             ))}
           </tbody>
         </table>
-        {visibleUsers.length === 0 && (
+        {!loading && visibleUsers.length === 0 && (
           <p className="text-center text-gray-400 py-8">No users found.</p>
         )}
         <Paginator page={page} total={total} limit={LIMIT} onPage={p => setPage(p)} />
