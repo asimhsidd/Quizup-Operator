@@ -3,19 +3,28 @@ import { BACKEND_URL } from './config';
 export const API = `${BACKEND_URL}/api`;
 
 // ── Low-level fetch helper ────────────────────────────────────────────────────
+// A plain 403 "Forbidden" means the admin JWT expired (4 h) or the admin was switched off:
+// App.jsx hears SESSION_EXPIRED and signs out. A role refusal has its own message.
+export const SESSION_EXPIRED = 'kwiz-admin-session-expired';
+
+async function readResponse(res) {
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 403 && data.error === 'Forbidden') window.dispatchEvent(new Event(SESSION_EXPIRED));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
 export async function adminFetch(path, options = {}, token) {
   const res = await fetch(`${API}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'x-admin-token': token,
+      ...(token && { 'x-admin-token': token }),
       ...(options.headers || {}),
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-  return data;
+  return readResponse(res);
 }
 
 // Multipart upload helper (no Content-Type — browser sets it with boundary)
@@ -25,9 +34,19 @@ export async function adminUpload(path, formData, token) {
     headers: { 'x-admin-token': token },
     body: formData,
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-  return data;
+  return readResponse(res);
+}
+
+export const fmtWhen = d => (d ? new Date(d).toLocaleString() : '—');
+
+/** "3 min ago", "2 h ago", "5 d ago" */
+export function timeAgo(d) {
+  if (!d) return '—';
+  const s = Math.max(0, (Date.now() - new Date(d).getTime()) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  return `${Math.floor(s / 86400)} d ago`;
 }
 
 // ── Small reusable helpers ────────────────────────────────────────────────────

@@ -18,8 +18,9 @@ npm run lint
 npm run build
 ```
 
-Log in with the backend's `ADMIN_TOKEN`; it's exchanged for a short-lived JWT kept in
-`sessionStorage`.
+Sign in with Google (your email must be in Team) or with the backend's `ADMIN_TOKEN` ("Use the admin
+token instead"). Either is exchanged for a 4-hour JWT kept in `sessionStorage`. Locally, Google sign-in
+works once `http://localhost:5174` is an authorised JavaScript origin of the Google Web client.
 
 ## Deploy
 
@@ -39,8 +40,9 @@ The full runbook is `Quizup/docs/deployment.md`.
 
 | Path | What |
 |---|---|
-| `src/App.jsx` | Login gate, tab bar, keep-alive tab mounting, admin socket |
-| `src/tabs/*Tab.jsx` | One file per tab (Analytics, Users, Categories, Topics, Logs, Config, Reports, Themes, Bots, Live) |
+| `src/App.jsx` | Sidebar, keep-alive tab mounting, admin socket, session expiry, Inbox count |
+| `src/components/LoginGate.jsx` | Google sign-in, and the admin token as break-glass |
+| `src/tabs/*Tab.jsx` | One file per tab (Inbox, Analytics, Users, Categories, Topics, AI Logs, Config, Reports, Bots, Live, Store, Audit, System, Team) |
 | `src/lib/adminUtils.jsx` | `adminFetch`, `adminUpload`, and shared table/button helpers |
 | `src/lib/config.js` | `BACKEND_URL` from `VITE_BACKEND_URL` |
 | `src/lib/socket.js` | Admin-only Socket.IO client (`auth.adminToken`, never a game JWT) |

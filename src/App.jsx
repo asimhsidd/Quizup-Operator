@@ -16,8 +16,13 @@ import {
   X,
   LogOut,
   Zap,
+  Inbox,
+  ScrollText,
+  Server,
+  UserCog,
 } from 'lucide-react';
-import { adminFetch, Spinner } from './lib/adminUtils.jsx';
+import { adminFetch, Spinner, SESSION_EXPIRED } from './lib/adminUtils.jsx';
+import LoginGate from './components/LoginGate.jsx';
 
 // ── Lazy tab imports ───────────────────────────────────────────────────────────
 const AnalyticsTab  = lazy(() => import('./tabs/AnalyticsTab.jsx'));
@@ -30,9 +35,14 @@ const ReportsTab    = lazy(() => import('./tabs/ReportsTab.jsx'));
 const BotsTab       = lazy(() => import('./tabs/BotsTab.jsx'));
 const LiveTab       = lazy(() => import('./tabs/LiveTab.jsx'));
 const StoreTab      = lazy(() => import('./tabs/StoreTab.jsx'));
+const InboxTab      = lazy(() => import('./tabs/InboxTab.jsx'));
+const AuditTab      = lazy(() => import('./tabs/AuditTab.jsx'));
+const SystemTab     = lazy(() => import('./tabs/SystemTab.jsx'));
+const TeamTab       = lazy(() => import('./tabs/TeamTab.jsx'));
 
 // ── Tab definitions ────────────────────────────────────────────────────────────
 const TABS = [
+  { id: 'inbox',      label: 'Inbox',      subtitle: 'What needs attention, live', Icon: Inbox },
   { id: 'analytics',  label: 'Overview',   subtitle: 'Game health and player activity', Icon: BarChart2 },
   { id: 'users',      label: 'Users',      subtitle: 'Players, profiles and access', Icon: Users },
   { id: 'categories', label: 'Categories', subtitle: 'Taxonomy and question quality', Icon: FolderTree },
@@ -43,68 +53,29 @@ const TABS = [
   { id: 'bots',       label: 'Bots',       subtitle: 'Synthetic players and behaviour', Icon: Gamepad2 },
   { id: 'live',       label: 'KWIZ Live',  subtitle: 'Events, schedules and prizes', Icon: Radio },
   { id: 'store',      label: 'Store',      subtitle: 'Products and entitlements', Icon: ShoppingBag },
+  { id: 'audit',      label: 'Audit log',  subtitle: 'Every change, by whom', Icon: ScrollText },
+  { id: 'system',     label: 'System',     subtitle: 'Cron jobs and health', Icon: Server },
+  { id: 'team',       label: 'Team',       subtitle: 'Admins, agents and keys', Icon: UserCog, ownerOnly: true },
 ];
 
 const NAV_GROUPS = [
-  { label: 'Command center', ids: ['analytics'] },
+  { label: 'Command center', ids: ['inbox', 'analytics'] },
   { label: 'Content & players', ids: ['users', 'categories', 'topics'] },
   { label: 'Operations', ids: ['reports', 'ai-logs', 'live'] },
   { label: 'Automation', ids: ['bots'] },
   { label: 'Platform controls', ids: ['config', 'store'] },
+  { label: 'Oversight', ids: ['audit', 'system', 'team'] },
 ];
-
-// ── Login gate ─────────────────────────────────────────────────────────────────
-function LoginGate({ onLogin }) {
-  const [val, setVal] = useState('');
-  const [err, setErr] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setErr('');
-    setLoading(true);
-    try {
-      // Exchange the raw ADMIN_TOKEN for a short-lived signed JWT
-      const data = await adminFetch('/admin/login', { method: 'POST', body: { token: val } }, '');
-      sessionStorage.setItem('admin_token', data.token);
-      onLogin(data.token);
-    } catch {
-      setErr('Invalid admin token');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA]">
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm space-y-4">
-        <h1 className="text-xl font-extrabold text-[#1A1A2E]">KWIZ Operator</h1>
-        <input
-          type="password"
-          value={val}
-          onChange={e => setVal(e.target.value)}
-          placeholder="Admin token"
-          className="w-full border border-[#E0E0E0] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#E8453C]"
-        />
-        {err && <p className="text-red-500 text-sm">{err}</p>}
-        <button
-          type="submit"
-          disabled={loading || !val}
-          className="w-full bg-[#E8453C] text-white font-bold rounded-xl py-2.5 text-sm hover:bg-[#d03a32] transition-colors disabled:opacity-60"
-        >
-          {loading ? 'Checking…' : 'Login'}
-        </button>
-      </form>
-    </div>
-  );
-}
 
 // ── Admin shell ────────────────────────────────────────────────────────────────
 export default function App() {
   const [token, setToken] = useState(() => sessionStorage.getItem('admin_token') || '');
-  const [activeTab, setActiveTab] = useState('analytics');
+  // Who is signed in ({ id, label, role, via }), from the login answer or GET /admin/me
+  const [me, setMe] = useState(() => JSON.parse(sessionStorage.getItem('admin_me') || 'null'));
+  const [activeTab, setActiveTab] = useState('inbox');
   // Tracks which tabs have been visited — once mounted, tabs are never unmounted
-  const [visitedTabs, setVisitedTabs] = useState(() => new Set(['analytics']));
+  const [visitedTabs, setVisitedTabs] = useState(() => new Set(['inbox']));
+  const [openCount, setOpenCount] = useState(0);
   const [liveConnected, setLiveConnected] = useState(socket.connected);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { addToast } = useToastStore();
@@ -127,6 +98,31 @@ export default function App() {
     };
   }, [token]);
 
+  // Who am I (a session from before this was stored), and the Inbox's open count, kept live
+  useEffect(() => {
+    if (!token) return;
+    if (!me) adminFetch('/admin/me', {}, token).then(d => { setMe(d.admin); sessionStorage.setItem('admin_me', JSON.stringify(d.admin)); }).catch(() => {});
+    const refresh = () => adminFetch('/admin/ops-events?status=open&limit=1', {}, token)
+      .then(d => setOpenCount(Object.values(d.open ?? {}).reduce((a, b) => a + b, 0))).catch(() => {});
+    refresh();
+    socket.on('ops_event', refresh);
+    return () => { socket.off('ops_event', refresh); };
+  }, [token]);
+
+  // An expired or switched-off session signs out
+  useEffect(() => {
+    function onExpired() {
+      if (!sessionStorage.getItem('admin_token')) return;
+      sessionStorage.removeItem('admin_token');
+      sessionStorage.removeItem('admin_me');
+      setToken('');
+      setMe(null);
+      addToast('Your session ended. Sign in again.', 'info');
+    }
+    window.addEventListener(SESSION_EXPIRED, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED, onExpired);
+  }, []);
+
   useEffect(() => {
     setVisitedTabs(prev => {
       if (prev.has(activeTab)) return prev;
@@ -136,12 +132,22 @@ export default function App() {
 
   function logout() {
     sessionStorage.removeItem('admin_token');
+    sessionStorage.removeItem('admin_me');
+    window.google?.accounts?.id?.disableAutoSelect();
     setToken('');
+    setMe(null);
     addToast('Logged out', 'info');
   }
 
+  function login(t, admin) {
+    sessionStorage.setItem('admin_token', t);
+    sessionStorage.setItem('admin_me', JSON.stringify(admin ?? null));
+    setMe(admin ?? null);
+    setToken(t);
+  }
+
   if (!token) {
-    return <LoginGate onLogin={t => setToken(t)} />;
+    return <LoginGate onLogin={login} />;
   }
 
   const active = TABS.find(tab => tab.id === activeTab) ?? TABS[0];
@@ -198,6 +204,7 @@ export default function App() {
               <div className="space-y-1">
                 {group.ids.map(id => {
                   const tab = TABS.find(item => item.id === id);
+                  if (tab.ownerOnly && me?.role !== 'owner') return null;
                   const Icon = tab.Icon;
                   const selected = activeTab === id;
                   return (
@@ -213,6 +220,9 @@ export default function App() {
                       {selected && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-[#FF5A50]" />}
                       <Icon size={17} className={selected ? 'text-[#FF6B62]' : 'text-slate-500 group-hover:text-slate-300'} />
                       <span>{tab.label}</span>
+                      {id === 'inbox' && openCount > 0 && (
+                        <span className="ml-auto rounded-full bg-[#E8453C] px-2 py-0.5 text-[10px] font-bold text-white">{openCount}</span>
+                      )}
                     </button>
                   );
                 })}
@@ -222,6 +232,12 @@ export default function App() {
         </nav>
 
         <div className="shrink-0 border-t border-white/10 p-3">
+          {me && (
+            <div className="mb-2 px-3 text-xs text-slate-400">
+              <div className="truncate text-slate-200">{me.label}</div>
+              <div className="uppercase tracking-wider text-[10px] text-slate-500">{me.role}{me.via === 'token' ? ' · admin token' : ''}</div>
+            </div>
+          )}
           <div className="mb-2 flex items-center gap-2 rounded-xl bg-white/[0.04] px-3 py-2.5 text-xs text-slate-400">
             <span className={`h-2 w-2 rounded-full ${liveConnected ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.65)]' : 'bg-amber-400'}`} />
             <span>{liveConnected ? 'Live updates connected' : 'Reconnecting live updates…'}</span>
@@ -287,6 +303,10 @@ export default function App() {
             </div>
           )}
           <div className="w-full" style={{ display: activeTab === 'topics' ? 'none' : '' }}>
+            {visitedTabs.has('inbox')      && <div style={{ display: activeTab === 'inbox'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><InboxTab      token={token} /></Suspense></div>}
+            {visitedTabs.has('audit')      && <div style={{ display: activeTab === 'audit'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><AuditTab      token={token} /></Suspense></div>}
+            {visitedTabs.has('system')     && <div style={{ display: activeTab === 'system'     ? '' : 'none' }}><Suspense fallback={<Spinner />}><SystemTab     token={token} /></Suspense></div>}
+            {visitedTabs.has('team')       && <div style={{ display: activeTab === 'team'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><TeamTab       token={token} me={me} /></Suspense></div>}
             {visitedTabs.has('analytics')  && <div style={{ display: activeTab === 'analytics'  ? '' : 'none' }}><Suspense fallback={<Spinner />}><AnalyticsTab  token={token} /></Suspense></div>}
             {visitedTabs.has('users')      && <div style={{ display: activeTab === 'users'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><UsersTab      token={token} /></Suspense></div>}
             {visitedTabs.has('ai-logs')    && <div style={{ display: activeTab === 'ai-logs'    ? '' : 'none' }}><Suspense fallback={<Spinner />}><AILogsTab     token={token} /></Suspense></div>}
