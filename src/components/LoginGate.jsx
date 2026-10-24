@@ -61,7 +61,7 @@ export default function LoginGate({ onLogin }) {
     setErr('');
     setLoading(true);
     try {
-      const data = await adminFetch('/admin/login', { method: 'POST', body: { token: val } });
+      const data = await adminFetch('/admin/login', { method: 'POST', body: { token: val.trim() } }); // a copied token often brings a newline
       onLogin(data.token, data.admin);
     } catch {
       setErr('Invalid admin token');
@@ -97,7 +97,7 @@ export default function LoginGate({ onLogin }) {
             />
             <button
               type="submit"
-              disabled={loading || !val}
+              disabled={loading || !val.trim()}
               className="w-full bg-[#E8453C] text-white font-bold rounded-xl py-2.5 text-sm hover:bg-[#d03a32] transition-colors disabled:opacity-60"
             >
               {loading ? 'Checking…' : 'Sign in with the token'}
