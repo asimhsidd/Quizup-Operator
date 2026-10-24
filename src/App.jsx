@@ -67,7 +67,7 @@ const TABS = [
   { id: 'economy',    label: 'Economy',    subtitle: 'Coins, purchases, KWIZ+, ads and signals', Icon: Coins },
   { id: 'store',      label: 'Store',      subtitle: 'Products and entitlements', Icon: ShoppingBag },
   { id: 'audit',      label: 'Audit log',  subtitle: 'Every change, by whom', Icon: ScrollText },
-  { id: 'system',     label: 'System',     subtitle: 'Cron jobs and health', Icon: Server },
+  { id: 'system',     label: 'System',     subtitle: 'Health, errors, the daily digest and cron jobs', Icon: Server },
   { id: 'team',       label: 'Team',       subtitle: 'Admins, agents and keys', Icon: UserCog, ownerOnly: true },
 ];
 

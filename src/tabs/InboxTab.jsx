@@ -1,8 +1,8 @@
 // Inbox: the KWIZ API's ops events (Quizup lib/opsEvents.js), what needs the operator's or
 // the agent's attention. Player reports, questions pulled by reports, failed generations
-// and cron jobs, voided purchases, finished Live events. Repeats of an open item bump its
-// count. Acknowledge = seen, someone's on it; Resolve = done. New and changed items arrive
-// live over the admin socket (ops_event).
+// and cron jobs, voided purchases, finished Live events, tracked errors and AI spend.
+// Repeats of an open item bump its count. Acknowledge = seen, someone's on it; Resolve =
+// done. New and changed items arrive live over the admin socket (ops_event).
 import { useEffect, useState } from 'react';
 import { socket } from '../lib/socket';
 import { adminFetch, Badge, Btn, Paginator, Spinner, fmtWhen, timeAgo } from '../lib/adminUtils.jsx';
@@ -20,6 +20,10 @@ const KINDS = {
   'live.finished':        'Live finished',
   'safety.agent_action':  'Agent restricted a player',
   'economy.signal':       'Economy signal',
+  'error.new':            'New error (System)',
+  'error.regressed':      'Error is back (System)',
+  'error.spike':          'Error spike',
+  'ai.budget':            'AI budget',
 };
 
 const SEVERITY = {
