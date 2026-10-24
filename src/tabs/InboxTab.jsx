@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { socket } from '../lib/socket';
 import { adminFetch, Badge, Btn, Paginator, Spinner, fmtWhen, timeAgo } from '../lib/adminUtils.jsx';
 import { useToastStore } from '../lib/toastStore';
+import { usePlayerStore } from '../store/playerStore';
 
 const LIMIT = 50;
 
@@ -17,6 +18,7 @@ const KINDS = {
   'cron.failed':          'Cron job failed',
   'billing.voided':       'Purchase voided',
   'live.finished':        'Live finished',
+  'safety.agent_action':  'Agent restricted a player',
 };
 
 const SEVERITY = {
@@ -36,7 +38,23 @@ function EventCard({ ev, token, onChanged }) {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const { addToast } = useToastStore();
+  const openPlayer = usePlayerStore(s => s.openPlayer);
   const sev = SEVERITY[ev.severity] ?? SEVERITY.info;
+
+  // An agent's restriction can be lifted from here; the drawer has the rest
+  async function liftAgentAction() {
+    const why = prompt('Lift this restriction now? Say why (kept in the audit log):');
+    if (why === null) return;
+    setBusy(true);
+    try {
+      await adminFetch(`/admin/restrictions/${ev.detail.restrictionId}/lift`, { method: 'POST', body: { note: why } }, token);
+      const { event } = await adminFetch(`/admin/ops-events/${ev.id}`, { method: 'POST', body: { status: 'resolved', note: `Lifted: ${why}` } }, token);
+      onChanged(event);
+    } catch (err) {
+      addToast(err.message, 'error');
+    }
+    setBusy(false);
+  }
 
   async function setStatus(status) {
     setBusy(true);
@@ -88,6 +106,8 @@ function EventCard({ ev, token, onChanged }) {
             placeholder="Note (optional)"
             className="min-w-40 flex-1 rounded-lg border border-[#E0E0E0] px-2.5 py-1.5 text-sm focus:outline-none focus:border-[#E8453C]"
           />
+          {ev.subject_type === 'user' && ev.subject_id && <Btn variant="primary" onClick={() => openPlayer(ev.subject_id)}>Open player</Btn>}
+          {ev.kind === 'safety.agent_action' && ev.detail?.restrictionId && <Btn variant="danger" disabled={busy} onClick={liftAgentAction}>Lift it</Btn>}
           {ev.status === 'open' && <Btn variant="ghost" disabled={busy} onClick={() => setStatus('acked')}>Acknowledge</Btn>}
           <Btn variant="success" disabled={busy} onClick={() => setStatus('resolved')}>Resolve</Btn>
         </div>

@@ -3,6 +3,8 @@ import { useToastStore } from '../lib/toastStore';
 import { fmtXp } from '../lib/fmt';
 import { adminFetch, adminUpload, Btn, SortableTableHeader, makeSortHandler, multiSort, Paginator } from '../lib/adminUtils.jsx';
 import WalletPanel from '../components/WalletPanel.jsx';
+import { restrictionLabel } from '../components/PlayerDrawer.jsx';
+import { usePlayerStore } from '../store/playerStore';
 
 const USER_COLS = [
   { label: 'User',    key: 'username'   },
@@ -30,6 +32,7 @@ export default function UsersTab({ token }) {
   const [editXpVal, setEditXpVal] = useState('');
   const [walletId, setWalletId] = useState(null); // the user whose Wallet panel is open
   const { addToast } = useToastStore();
+  const { openPlayer, version } = usePlayerStore();
   const LIMIT = 50;
 
   // Search and the bot filter run on the server, across every player, not just this page
@@ -48,7 +51,7 @@ export default function UsersTab({ token }) {
     }
   }
 
-  useEffect(() => { load(page); }, [page]);
+  useEffect(() => { load(page); }, [page, version]);
 
   // A new search or filter starts again at page 1 (debounced while typing)
   const filtersSeen = useRef(false);
@@ -170,7 +173,13 @@ export default function UsersTab({ token }) {
                           {u.username[0].toUpperCase()}
                         </div>
                     }
-                    <span className="text-[#1A1A2E] font-semibold">{u.username}</span>
+                    <button type="button" onClick={() => openPlayer(u.id)} className="text-[#1A1A2E] font-semibold hover:underline">{u.username}</button>
+                    {u.restriction && (
+                      <span className={`text-[10px] font-bold rounded px-1.5 py-0.5 ${u.restriction.kind === 'mute' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-700'}`}
+                            title={u.restriction.reason}>
+                        {restrictionLabel(u.restriction)}
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td className="px-4 py-3 text-gray-500">{u.email}</td>

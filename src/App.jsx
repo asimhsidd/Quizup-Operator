@@ -20,9 +20,11 @@ import {
   ScrollText,
   Server,
   UserCog,
+  ShieldAlert,
 } from 'lucide-react';
 import { adminFetch, Spinner, SESSION_EXPIRED } from './lib/adminUtils.jsx';
 import LoginGate from './components/LoginGate.jsx';
+import PlayerDrawer from './components/PlayerDrawer.jsx';
 
 // ── Lazy tab imports ───────────────────────────────────────────────────────────
 const AnalyticsTab  = lazy(() => import('./tabs/AnalyticsTab.jsx'));
@@ -39,6 +41,7 @@ const InboxTab      = lazy(() => import('./tabs/InboxTab.jsx'));
 const AuditTab      = lazy(() => import('./tabs/AuditTab.jsx'));
 const SystemTab     = lazy(() => import('./tabs/SystemTab.jsx'));
 const TeamTab       = lazy(() => import('./tabs/TeamTab.jsx'));
+const ModerationTab = lazy(() => import('./tabs/ModerationTab.jsx'));
 
 // ── Tab definitions ────────────────────────────────────────────────────────────
 const TABS = [
@@ -50,6 +53,7 @@ const TABS = [
   { id: 'ai-logs',    label: 'AI Logs',    subtitle: 'Generation activity and automatic repair', Icon: Bot },
   { id: 'config',     label: 'Config',     subtitle: 'Runtime rules and AI models', Icon: Settings },
   { id: 'reports',    label: 'Reports',    subtitle: 'Player safety and moderation', Icon: Flag },
+  { id: 'moderation', label: 'Moderation', subtitle: 'Pictures, player topics, reported questions', Icon: ShieldAlert },
   { id: 'bots',       label: 'Bots',       subtitle: 'Synthetic players and behaviour', Icon: Gamepad2 },
   { id: 'live',       label: 'KWIZ Live',  subtitle: 'Events, schedules and prizes', Icon: Radio },
   { id: 'store',      label: 'Store',      subtitle: 'Products and entitlements', Icon: ShoppingBag },
@@ -61,7 +65,7 @@ const TABS = [
 const NAV_GROUPS = [
   { label: 'Command center', ids: ['inbox', 'analytics'] },
   { label: 'Content & players', ids: ['users', 'categories', 'topics'] },
-  { label: 'Operations', ids: ['reports', 'ai-logs', 'live'] },
+  { label: 'Operations', ids: ['reports', 'moderation', 'ai-logs', 'live'] },
   { label: 'Automation', ids: ['bots'] },
   { label: 'Platform controls', ids: ['config', 'store'] },
   { label: 'Oversight', ids: ['audit', 'system', 'team'] },
@@ -306,6 +310,7 @@ export default function App() {
             {visitedTabs.has('inbox')      && <div style={{ display: activeTab === 'inbox'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><InboxTab      token={token} /></Suspense></div>}
             {visitedTabs.has('audit')      && <div style={{ display: activeTab === 'audit'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><AuditTab      token={token} /></Suspense></div>}
             {visitedTabs.has('system')     && <div style={{ display: activeTab === 'system'     ? '' : 'none' }}><Suspense fallback={<Spinner />}><SystemTab     token={token} /></Suspense></div>}
+            {visitedTabs.has('moderation') && <div style={{ display: activeTab === 'moderation' ? '' : 'none' }}><Suspense fallback={<Spinner />}><ModerationTab token={token} /></Suspense></div>}
             {visitedTabs.has('team')       && <div style={{ display: activeTab === 'team'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><TeamTab       token={token} me={me} /></Suspense></div>}
             {visitedTabs.has('analytics')  && <div style={{ display: activeTab === 'analytics'  ? '' : 'none' }}><Suspense fallback={<Spinner />}><AnalyticsTab  token={token} /></Suspense></div>}
             {visitedTabs.has('users')      && <div style={{ display: activeTab === 'users'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><UsersTab      token={token} /></Suspense></div>}
@@ -319,6 +324,7 @@ export default function App() {
           </div>
         </main>
       </div>
+      <PlayerDrawer token={token} />
     </div>
   );
 }
