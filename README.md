@@ -42,7 +42,8 @@ The full runbook is `Quizup/docs/deployment.md`.
 |---|---|
 | `src/App.jsx` | Sidebar, keep-alive tab mounting, admin socket, session expiry, Inbox count |
 | `src/components/LoginGate.jsx` | Google sign-in, and the admin token as break-glass |
-| `src/tabs/*Tab.jsx` | One file per tab (Inbox, Analytics, Users, Categories, Topics, AI Logs, Config, Reports, Bots, Live, Store, Audit, System, Team) |
+| `src/components/PlayerDrawer.jsx` | One player's picture and every safety action; opened from anywhere via `store/playerStore.js` |
+| `src/tabs/*Tab.jsx` | One file per tab (Inbox, Analytics, Economy, Users, Categories, Topics, AI Logs, Config, Reports, Moderation, Bots, Live, Store, Audit, System, Team) |
 | `src/lib/adminUtils.jsx` | `adminFetch`, `adminUpload`, and shared table/button helpers |
 | `src/lib/config.js` | `BACKEND_URL` from `VITE_BACKEND_URL` |
 | `src/lib/socket.js` | Admin-only Socket.IO client (`auth.adminToken`, never a game JWT) |

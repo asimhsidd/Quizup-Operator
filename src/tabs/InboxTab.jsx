@@ -19,6 +19,7 @@ const KINDS = {
   'billing.voided':       'Purchase voided',
   'live.finished':        'Live finished',
   'safety.agent_action':  'Agent restricted a player',
+  'economy.signal':       'Economy signal',
 };
 
 const SEVERITY = {
