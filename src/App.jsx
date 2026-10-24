@@ -22,6 +22,8 @@ import {
   UserCog,
   ShieldAlert,
   Coins,
+  Globe2,
+  Megaphone,
 } from 'lucide-react';
 import { adminFetch, Spinner, SESSION_EXPIRED } from './lib/adminUtils.jsx';
 import LoginGate from './components/LoginGate.jsx';
@@ -44,6 +46,8 @@ const SystemTab     = lazy(() => import('./tabs/SystemTab.jsx'));
 const TeamTab       = lazy(() => import('./tabs/TeamTab.jsx'));
 const ModerationTab = lazy(() => import('./tabs/ModerationTab.jsx'));
 const EconomyTab    = lazy(() => import('./tabs/EconomyTab.jsx'));
+const GameWorldTab  = lazy(() => import('./tabs/GameWorldTab.jsx'));
+const CommsTab      = lazy(() => import('./tabs/CommsTab.jsx'));
 
 // ── Tab definitions ────────────────────────────────────────────────────────────
 const TABS = [
@@ -58,6 +62,8 @@ const TABS = [
   { id: 'moderation', label: 'Moderation', subtitle: 'Pictures, player topics, reported questions', Icon: ShieldAlert },
   { id: 'bots',       label: 'Bots',       subtitle: 'Synthetic players and behaviour', Icon: Gamepad2 },
   { id: 'live',       label: 'KWIZ Live',  subtitle: 'Events, schedules and prizes', Icon: Radio },
+  { id: 'world',      label: 'Game world', subtitle: 'Clans, missions, crowns, rivals and Discover', Icon: Globe2 },
+  { id: 'comms',      label: 'Comms',      subtitle: 'Push campaigns and the launch waitlist', Icon: Megaphone },
   { id: 'economy',    label: 'Economy',    subtitle: 'Coins, purchases, KWIZ+, ads and signals', Icon: Coins },
   { id: 'store',      label: 'Store',      subtitle: 'Products and entitlements', Icon: ShoppingBag },
   { id: 'audit',      label: 'Audit log',  subtitle: 'Every change, by whom', Icon: ScrollText },
@@ -68,7 +74,7 @@ const TABS = [
 const NAV_GROUPS = [
   { label: 'Command center', ids: ['inbox', 'analytics', 'economy'] },
   { label: 'Content & players', ids: ['users', 'categories', 'topics'] },
-  { label: 'Operations', ids: ['reports', 'moderation', 'ai-logs', 'live'] },
+  { label: 'Operations', ids: ['reports', 'moderation', 'ai-logs', 'live', 'world', 'comms'] },
   { label: 'Automation', ids: ['bots'] },
   { label: 'Platform controls', ids: ['config', 'store'] },
   { label: 'Oversight', ids: ['audit', 'system', 'team'] },
@@ -315,6 +321,8 @@ export default function App() {
             {visitedTabs.has('system')     && <div style={{ display: activeTab === 'system'     ? '' : 'none' }}><Suspense fallback={<Spinner />}><SystemTab     token={token} /></Suspense></div>}
             {visitedTabs.has('moderation') && <div style={{ display: activeTab === 'moderation' ? '' : 'none' }}><Suspense fallback={<Spinner />}><ModerationTab token={token} /></Suspense></div>}
             {visitedTabs.has('economy')    && <div style={{ display: activeTab === 'economy'    ? '' : 'none' }}><Suspense fallback={<Spinner />}><EconomyTab    token={token} /></Suspense></div>}
+            {visitedTabs.has('world')      && <div style={{ display: activeTab === 'world'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><GameWorldTab  token={token} /></Suspense></div>}
+            {visitedTabs.has('comms')      && <div style={{ display: activeTab === 'comms'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><CommsTab      token={token} /></Suspense></div>}
             {visitedTabs.has('team')       && <div style={{ display: activeTab === 'team'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><TeamTab       token={token} me={me} /></Suspense></div>}
             {visitedTabs.has('analytics')  && <div style={{ display: activeTab === 'analytics'  ? '' : 'none' }}><Suspense fallback={<Spinner />}><AnalyticsTab  token={token} /></Suspense></div>}
             {visitedTabs.has('users')      && <div style={{ display: activeTab === 'users'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><UsersTab      token={token} /></Suspense></div>}

@@ -5,49 +5,14 @@ import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { adminFetch, Badge, Btn, Paginator, Spinner, fmtWhen, timeAgo } from '../lib/adminUtils.jsx';
 import { usePlayerStore } from '../store/playerStore';
+import { StatCard, SectionHeading, Table, n } from '../components/Panels.jsx';
 
 const CHART_TOOLTIP_STYLE = {
   contentStyle: { background: '#fff', border: '1px solid #E0E0E0', borderRadius: 8, fontSize: 12 },
   labelStyle: { color: '#1A1A2E', fontWeight: 600 },
 };
 
-const n = v => Number(v ?? 0).toLocaleString();
 const day = d => new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-
-function StatCard({ label, value, sub }) {
-  return (
-    <div className="bg-white border border-[#E0E0E0] shadow-sm rounded-xl p-4">
-      <div className="text-gray-500 text-xs font-semibold uppercase tracking-wide mb-1">{label}</div>
-      <div className="font-extrabold text-2xl text-[#1A1A2E]">{value ?? '—'}</div>
-      {sub && <div className="text-gray-400 text-xs mt-0.5">{sub}</div>}
-    </div>
-  );
-}
-
-function SectionHeading({ children, right }) {
-  return (
-    <div className="mb-3 flex items-center justify-between gap-2 border-t border-[#E8E8E8] pt-2">
-      <h3 className="text-[#1A1A2E] font-bold text-base">{children}</h3>
-      {right}
-    </div>
-  );
-}
-
-function Table({ cols, rows, empty }) {
-  return (
-    <div className="overflow-x-auto rounded-xl border border-[#E0E0E0] bg-white">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-[#E0E0E0] bg-gray-50 text-left text-xs font-bold uppercase tracking-wide text-gray-500">
-            {cols.map(c => <th key={c} className="px-4 py-2.5">{c}</th>)}
-          </tr>
-        </thead>
-        <tbody>{rows}</tbody>
-      </table>
-      {(!rows || rows.length === 0) && <p className="py-6 text-center text-sm text-gray-400">{empty}</p>}
-    </div>
-  );
-}
 
 const SIGNALS = {
   referralFarms:    { title: 'Referral farms', hint: '3+ rewarded invites in 7 days whose invitees average under 5 games.',
