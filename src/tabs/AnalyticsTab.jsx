@@ -191,6 +191,7 @@ function SocialSection({ token, refreshKey }) {
                         <th className="font-semibold py-1 text-right">Sent</th>
                         <th className="font-semibold py-1 text-right">To people</th>
                         <th className="font-semibold py-1 text-right">Acceptance</th>
+                        <th className="font-semibold py-1 text-right">Became friends</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -201,6 +202,9 @@ function SocialSection({ token, refreshKey }) {
                           <td className="py-1 text-right tabular-nums">{x.to_people}</td>
                           <td className="py-1 text-right tabular-nums" title="Accepted, of the ones answered or expired">
                             {pctOf(x.accepted, x.decided)}{x.decided > 0 ? ` (${x.accepted}/${x.decided})` : ''}
+                          </td>
+                          <td className="py-1 text-right tabular-nums" title="Pairs who weren't friends when it was sent and are friends now">
+                            {pctOf(x.befriended ?? 0, x.stranger_pairs ?? 0)}{x.stranger_pairs > 0 ? ` (${x.befriended}/${x.stranger_pairs})` : ''}
                           </td>
                         </tr>
                       ))}
