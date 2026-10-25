@@ -14,7 +14,7 @@ const GROUP_HOME = {
   'Missions':           { tab: 'world', view: 'missions' },
   'Clans & crowns':     { tab: 'world', view: 'clans' },
   'Social & discovery': { tab: 'world', view: 'discover' },
-  'Content':            { tab: 'rules' },
+  'Content':            { tab: 'library' },
   'Safety':             { tab: 'moderation' },
   'Comms':              { tab: 'comms' },
   'System':             { tab: 'system' },

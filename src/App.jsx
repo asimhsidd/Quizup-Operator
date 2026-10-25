@@ -3,13 +3,12 @@ import { useToastStore } from './lib/toastStore';
 import { socket } from './lib/socket';
 import {
   Users,
-  BookOpen,
+  Library,
   Bot,
   SlidersHorizontal,
   Gamepad2,
   BarChart2,
   Flag,
-  FolderTree,
   Radio,
   Menu,
   X,
@@ -33,8 +32,7 @@ import { useNavStore } from './store/navStore';
 // ── Lazy tab imports ───────────────────────────────────────────────────────────
 const AnalyticsTab  = lazy(() => import('./tabs/AnalyticsTab.jsx'));
 const UsersTab      = lazy(() => import('./tabs/UsersTab.jsx'));
-const CategoriesTab = lazy(() => import('./tabs/CategoriesTab.jsx'));
-const TopicsTab     = lazy(() => import('./tabs/TopicsTab.jsx'));
+const LibraryTab    = lazy(() => import('./tabs/LibraryTab.jsx'));
 const AILogsTab     = lazy(() => import('./tabs/AILogsTab.jsx'));
 const GameRulesTab  = lazy(() => import('./tabs/GameRulesTab.jsx'));
 const ReportsTab    = lazy(() => import('./tabs/ReportsTab.jsx'));
@@ -54,8 +52,7 @@ const TABS = [
   { id: 'inbox',      label: 'Inbox',      subtitle: 'What needs attention, live', Icon: Inbox },
   { id: 'analytics',  label: 'Overview',   subtitle: 'Game health and player activity', Icon: BarChart2 },
   { id: 'users',      label: 'Users',      subtitle: 'Players, profiles and access', Icon: Users },
-  { id: 'categories', label: 'Categories', subtitle: 'Taxonomy and question quality', Icon: FolderTree },
-  { id: 'topics',     label: 'Topics',     subtitle: 'Question library and generation', Icon: BookOpen },
+  { id: 'library',    label: 'Library',    subtitle: 'Categories, topics, questions and answers', Icon: Library },
   { id: 'ai-logs',    label: 'AI',         subtitle: 'Models, budget, generation activity and automatic repair', Icon: Bot },
   { id: 'rules',      label: 'Game rules', subtitle: 'Rounds, scoring, XP, ranks and lifelines', Icon: SlidersHorizontal },
   { id: 'reports',    label: 'Reports',    subtitle: 'Player safety and moderation', Icon: Flag },
@@ -75,7 +72,7 @@ const VIEW_LABELS = { store: 'Store & pricing', clans: 'Clans', missions: 'Missi
 
 const NAV_GROUPS = [
   { label: 'Command center', ids: ['inbox', 'analytics', 'economy'] },
-  { label: 'Content & players', ids: ['users', 'categories', 'topics'] },
+  { label: 'Content & players', ids: ['users', 'library'] },
   { label: 'Operations', ids: ['reports', 'moderation', 'ai-logs', 'live', 'world', 'comms'] },
   { label: 'Automation', ids: ['bots'] },
   { label: 'Platform controls', ids: ['rules'] },
@@ -312,15 +309,15 @@ export default function App() {
         </header>
 
         {/* Lazy mount + keep-alive: each tab mounts on first visit and is never unmounted */}
-        <main className={`min-w-0 flex-1 ${activeTab === 'topics' ? 'overflow-hidden' : 'p-4 sm:p-6 xl:p-8'}`}>
-          {visitedTabs.has('topics') && (
-            <div style={{ display: activeTab === 'topics' ? '' : 'none' }}>
+        <main className={`min-w-0 flex-1 ${activeTab === 'library' ? 'overflow-hidden' : 'p-4 sm:p-6 xl:p-8'}`}>
+          {visitedTabs.has('library') && (
+            <div style={{ display: activeTab === 'library' ? '' : 'none' }}>
               <Suspense fallback={<Spinner />}>
-                <TopicsTab token={token} />
+                <LibraryTab token={token} />
               </Suspense>
             </div>
           )}
-          <div className="w-full" style={{ display: activeTab === 'topics' ? 'none' : '' }}>
+          <div className="w-full" style={{ display: activeTab === 'library' ? 'none' : '' }}>
             {visitedTabs.has('inbox')      && <div style={{ display: activeTab === 'inbox'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><InboxTab      token={token} /></Suspense></div>}
             {visitedTabs.has('audit')      && <div style={{ display: activeTab === 'audit'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><AuditTab      token={token} /></Suspense></div>}
             {visitedTabs.has('system')     && <div style={{ display: activeTab === 'system'     ? '' : 'none' }}><Suspense fallback={<Spinner />}><SystemTab     token={token} /></Suspense></div>}
@@ -336,7 +333,6 @@ export default function App() {
             {visitedTabs.has('reports')    && <div style={{ display: activeTab === 'reports'    ? '' : 'none' }}><Suspense fallback={<Spinner />}><ReportsTab    token={token} /></Suspense></div>}
             {visitedTabs.has('bots')       && <div style={{ display: activeTab === 'bots'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><BotsTab       token={token} /></Suspense></div>}
             {visitedTabs.has('live')       && <div style={{ display: activeTab === 'live'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><LiveTab       token={token} /></Suspense></div>}
-            {visitedTabs.has('categories') && <div style={{ display: activeTab === 'categories' ? '' : 'none' }}><Suspense fallback={<Spinner />}><CategoriesTab token={token} /></Suspense></div>}
           </div>
         </main>
       </div>

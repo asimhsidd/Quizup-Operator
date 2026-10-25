@@ -176,15 +176,6 @@ export function multiSort(arr, sortKeys) {
   });
 }
 
-// ── Health badge helpers ──────────────────────────────────────────────────────
-export function healthBadge(t) {
-  if (!t.questions_ready) return { color: 'bg-amber-100 text-amber-700', label: 'Pending' };
-  if (t.question_count < 7)  return { color: 'bg-red-100 text-red-700',    label: 'Critical' };
-  if (t.question_count < 14) return { color: 'bg-orange-100 text-orange-700', label: 'Minimal' };
-  if (t.question_count < 30) return { color: 'bg-yellow-100 text-yellow-700', label: 'Low' };
-  return { color: 'bg-green-100 text-green-700', label: 'Healthy' };
-}
-
 // ── Paginator ─────────────────────────────────────────────────────────────────
 export function Paginator({ page, total, limit, onPage }) {
   const totalPages = Math.ceil(total / limit);
