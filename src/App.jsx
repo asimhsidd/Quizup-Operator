@@ -22,6 +22,8 @@ import {
   Globe2,
   Megaphone,
   ChevronDown,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { adminFetch, Spinner, SESSION_EXPIRED } from './lib/adminUtils.jsx';
 import LoginGate from './components/LoginGate.jsx';
@@ -92,6 +94,9 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // Sidebar groups folded away, remembered on this browser
   const [collapsed, setCollapsed] = useState(() => new Set(JSON.parse(localStorage.getItem('nav_collapsed') || '[]')));
+  // On desktop the whole sidebar can shrink to an icon rail (the phone drawer is always full)
+  const [rail, setRail] = useState(() => localStorage.getItem('nav_rail') === '1');
+  const inRail = rail ? 'lg:hidden' : '';
   const { addToast } = useToastStore();
 
   useEffect(() => {
@@ -153,6 +158,13 @@ export default function App() {
     });
   }
 
+  function toggleRail() {
+    setRail(prev => {
+      localStorage.setItem('nav_rail', prev ? '0' : '1');
+      return !prev;
+    });
+  }
+
   function logout() {
     sessionStorage.removeItem('admin_token');
     sessionStorage.removeItem('admin_me');
@@ -195,15 +207,16 @@ export default function App() {
 
       {/* Primary navigation */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[264px] flex-col bg-[#071126] text-slate-200 shadow-2xl transition-transform duration-200 lg:translate-x-0 lg:shadow-none
+        className={`fixed inset-y-0 left-0 z-50 flex w-[264px] flex-col bg-[#071126] text-slate-200 shadow-2xl transition-[transform,width] duration-200 lg:translate-x-0 lg:shadow-none
+          ${rail ? 'lg:w-[72px]' : ''}
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        <div className="h-[72px] shrink-0 border-b border-white/10 px-5 flex items-center justify-between">
+        <div className={`h-[72px] shrink-0 border-b border-white/10 px-5 flex items-center justify-between ${rail ? 'lg:justify-center lg:px-0' : ''}`}>
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E8453C] text-white shadow-lg shadow-red-950/30">
               <Zap size={19} fill="currentColor" />
             </span>
-            <div>
+            <div className={inRail}>
               <div className="font-extrabold tracking-tight text-white">KWIZ Operator</div>
               <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Command console</div>
             </div>
@@ -222,12 +235,12 @@ export default function App() {
           {NAV_GROUPS.map(group => {
             const folded = collapsed.has(group.label);
             return (
-            <div key={group.label} className="mb-5 last:mb-0">
+            <div key={group.label} className={`mb-5 last:mb-0 ${rail ? 'lg:mb-3 lg:border-t lg:border-white/10 lg:pt-3 lg:first:border-t-0 lg:first:pt-0' : ''}`}>
               <button
                 type="button"
                 onClick={() => toggleGroup(group.label)}
                 aria-expanded={!folded}
-                className="group flex w-full items-center gap-2 px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500 hover:text-slate-300"
+                className={`group flex w-full items-center gap-2 px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500 hover:text-slate-300 ${inRail}`}
               >
                 <span>{group.label}</span>
                 {folded && group.ids.includes('inbox') && openCount > 0 && (
@@ -239,8 +252,9 @@ export default function App() {
                 {group.ids.map(id => {
                   const tab = TABS.find(item => item.id === id);
                   if (tab.ownerOnly && me?.role !== 'owner') return null;
-                  // A folded group still shows the tab you're on
-                  if (folded && activeTab !== id) return null;
+                  // A folded group still shows the tab you're on (the rail shows every tab)
+                  const hidden = folded && activeTab !== id;
+                  if (hidden && !rail) return null;
                   const Icon = tab.Icon;
                   const selected = activeTab === id;
                   return (
@@ -248,16 +262,19 @@ export default function App() {
                       type="button"
                       key={id}
                       onClick={() => selectTab(id)}
+                      title={rail ? tab.label : undefined}
                       className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors
+                        ${hidden ? 'hidden lg:flex' : ''} ${rail ? 'lg:justify-center lg:px-0' : ''}
                         ${selected
                           ? 'bg-white/10 text-white'
                           : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-100'}`}
                     >
                       {selected && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-[#FF5A50]" />}
                       <Icon size={17} className={selected ? 'text-[#FF6B62]' : 'text-slate-500 group-hover:text-slate-300'} />
-                      <span>{tab.label}</span>
+                      <span className={inRail}>{tab.label}</span>
                       {id === 'inbox' && openCount > 0 && (
-                        <span className="ml-auto rounded-full bg-[#E8453C] px-2 py-0.5 text-[10px] font-bold text-white">{openCount}</span>
+                        <span className={`ml-auto rounded-full bg-[#E8453C] px-2 py-0.5 text-[10px] font-bold text-white
+                          ${rail ? 'lg:absolute lg:right-1 lg:top-0.5 lg:ml-0 lg:px-1.5 lg:py-px lg:text-[9px]' : ''}`}>{openCount}</span>
                       )}
                     </button>
                   );
@@ -270,27 +287,40 @@ export default function App() {
 
         <div className="shrink-0 border-t border-white/10 p-3">
           {me && (
-            <div className="mb-2 px-3 text-xs text-slate-400">
+            <div className={`mb-2 px-3 text-xs text-slate-400 ${inRail}`}>
               <div className="truncate text-slate-200">{me.label}</div>
               <div className="uppercase tracking-wider text-[10px] text-slate-500">{me.role}{me.via === 'token' ? ' · admin token' : ''}</div>
             </div>
           )}
-          <div className="mb-2 flex items-center gap-2 rounded-xl bg-white/[0.04] px-3 py-2.5 text-xs text-slate-400">
-            <span className={`h-2 w-2 rounded-full ${liveConnected ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.65)]' : 'bg-amber-400'}`} />
-            <span>{liveConnected ? 'Live updates connected' : 'Reconnecting live updates…'}</span>
+          <div
+            title={rail ? (liveConnected ? 'Live updates connected' : 'Reconnecting live updates…') : undefined}
+            className={`mb-2 flex items-center gap-2 rounded-xl bg-white/[0.04] px-3 py-2.5 text-xs text-slate-400 ${rail ? 'lg:justify-center lg:px-0' : ''}`}
+          >
+            <span className={`h-2 w-2 shrink-0 rounded-full ${liveConnected ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.65)]' : 'bg-amber-400'}`} />
+            <span className={inRail}>{liveConnected ? 'Live updates connected' : 'Reconnecting live updates…'}</span>
           </div>
           <button
             type="button"
             onClick={logout}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white"
+            title={rail ? 'Sign out' : undefined}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white ${rail ? 'lg:justify-center lg:px-0' : ''}`}
           >
             <LogOut size={17} />
-            Sign out
+            <span className={inRail}>Sign out</span>
+          </button>
+          <button
+            type="button"
+            onClick={toggleRail}
+            title={rail ? 'Expand sidebar' : undefined}
+            className={`hidden w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white lg:flex ${rail ? 'lg:justify-center lg:px-0' : ''}`}
+          >
+            {rail ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+            <span className={inRail}>Collapse sidebar</span>
           </button>
         </div>
       </aside>
 
-      <div className="flex min-h-[100dvh] min-w-0 flex-col lg:pl-[264px]">
+      <div className={`flex min-h-[100dvh] min-w-0 flex-col transition-[padding] duration-200 ${rail ? 'lg:pl-[72px]' : 'lg:pl-[264px]'}`}>
         {/* Context header */}
         <header className="sticky top-0 z-30 flex h-[72px] shrink-0 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6 xl:px-8">
           <div className="flex min-w-0 items-center gap-3">
