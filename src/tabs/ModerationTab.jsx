@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { adminFetch, Badge, Btn, Paginator, Spinner, timeAgo } from '../lib/adminUtils.jsx';
 import { useToastStore } from '../lib/toastStore';
 import { usePlayerStore } from '../store/playerStore';
+import SettingsSection from '../components/SettingsSection.jsx';
 
 const LIMIT = 60;
 
@@ -172,6 +173,7 @@ export default function ModerationTab({ token }) {
         </div>
       </div>
       <Active token={token} />
+      <SettingsSection token={token} tab="moderation" />
     </div>
   );
 }

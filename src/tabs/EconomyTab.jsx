@@ -1,11 +1,15 @@
-// Economy: coins, Play purchases, KWIZ+, rewarded ads and KWIZ Live over a window, the
-// refunds list, and the fraud signals (Quizup lib/economy.js). Units only: Play sets and
+// Economy. Overview: coins, Play purchases, KWIZ+, rewarded ads and KWIZ Live over a window, the
+// refunds list, and the fraud signals (Quizup lib/economy.js). Store & pricing: the shop's
+// catalogue and the coin, KWIZ+ and ad settings. Units only: Play sets and
 // localises prices, so money is in Play Console. Bots and test purchases are left out.
 import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { adminFetch, Badge, Btn, Paginator, Spinner, fmtWhen, timeAgo } from '../lib/adminUtils.jsx';
 import { usePlayerStore } from '../store/playerStore';
-import { StatCard, SectionHeading, Table, n } from '../components/Panels.jsx';
+import { StatCard, SectionHeading, Table, Pills, n } from '../components/Panels.jsx';
+import SettingsSection from '../components/SettingsSection.jsx';
+import StoreCatalogue from '../components/StoreCatalogue.jsx';
+import { useFocusView } from '../store/navStore';
 
 const CHART_TOOLTIP_STYLE = {
   contentStyle: { background: '#fff', border: '1px solid #E0E0E0', borderRadius: 8, fontSize: 12 },
@@ -102,7 +106,7 @@ function Refunds({ token }) {
   );
 }
 
-export default function EconomyTab({ token }) {
+function Overview({ token }) {
   const [days, setDays] = useState(30);
   const [o, setO] = useState(null);
   const [error, setError] = useState('');
@@ -257,6 +261,23 @@ export default function EconomyTab({ token }) {
         <SectionHeading>Purchases and refunds</SectionHeading>
         <Refunds token={token} />
       </div>
+    </div>
+  );
+}
+
+export default function EconomyTab({ token }) {
+  const [view, setView] = useState('overview');
+  useFocusView('economy', setView);
+  return (
+    <div className="flex flex-col gap-5">
+      <Pills options={[['overview', 'Overview'], ['store', 'Store & pricing']]} value={view} onChange={setView} />
+      {view === 'overview' && <Overview token={token} />}
+      {view === 'store' && (
+        <>
+          <StoreCatalogue token={token} />
+          <SettingsSection token={token} tab="economy" view="store" title="Coins, KWIZ+ and ads" defaultOpen />
+        </>
+      )}
     </div>
   );
 }

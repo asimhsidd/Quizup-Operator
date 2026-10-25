@@ -5,6 +5,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { adminFetch, Badge, Btn, Spinner, timeAgo } from '../lib/adminUtils.jsx';
 import { usePlayerStore } from '../store/playerStore';
 import { StatCard, Table, n } from '../components/Panels.jsx';
+import SettingsSection from '../components/SettingsSection.jsx';
 
 const STATUS_COLOR = {
   scheduled: 'bg-cyan-100 text-cyan-700',
@@ -98,7 +99,7 @@ export default function LiveTab({ token }) {
           </Btn>
         </div>
         <p className="text-xs text-gray-500">
-          Time, zone, prize, minimum players, question count and round length are the live_* keys in Config.
+          Time, zone, prize, minimum players, question count and round length are in Settings at the bottom of this page.
         </p>
         {error && <p className="text-red-600 text-sm">{error}</p>}
       </section>
@@ -182,6 +183,7 @@ export default function LiveTab({ token }) {
           </tbody>
         </table>
       </section>
+      <SettingsSection token={token} tab="live" />
     </div>
   );
 }

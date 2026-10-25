@@ -4,6 +4,7 @@ import { useToastStore } from '../lib/toastStore';
 import { Database } from 'lucide-react';
 import { adminFetch, Btn, Spinner, SortableTableHeader, makeSortHandler, multiSort, API } from '../lib/adminUtils.jsx';
 import { fmtXp } from '../lib/fmt';
+import SettingsSection from '../components/SettingsSection.jsx';
 
 function fmtTimeAgo(dateStr) {
   if (!dateStr) return 'Never';
@@ -578,6 +579,8 @@ export default function BotsTab({ token }) {
           }}
         />
       )}
+
+      <SettingsSection token={token} tab="bots" title="Bots in lists and clans" />
     </div>
   );
 }

@@ -5,13 +5,12 @@ import {
   Users,
   BookOpen,
   Bot,
-  Settings,
+  SlidersHorizontal,
   Gamepad2,
   BarChart2,
   Flag,
   FolderTree,
   Radio,
-  ShoppingBag,
   Menu,
   X,
   LogOut,
@@ -28,6 +27,8 @@ import {
 import { adminFetch, Spinner, SESSION_EXPIRED } from './lib/adminUtils.jsx';
 import LoginGate from './components/LoginGate.jsx';
 import PlayerDrawer from './components/PlayerDrawer.jsx';
+import SettingsSearch from './components/SettingsSearch.jsx';
+import { useNavStore } from './store/navStore';
 
 // ── Lazy tab imports ───────────────────────────────────────────────────────────
 const AnalyticsTab  = lazy(() => import('./tabs/AnalyticsTab.jsx'));
@@ -35,11 +36,10 @@ const UsersTab      = lazy(() => import('./tabs/UsersTab.jsx'));
 const CategoriesTab = lazy(() => import('./tabs/CategoriesTab.jsx'));
 const TopicsTab     = lazy(() => import('./tabs/TopicsTab.jsx'));
 const AILogsTab     = lazy(() => import('./tabs/AILogsTab.jsx'));
-const ConfigTab     = lazy(() => import('./tabs/ConfigTab.jsx'));
+const GameRulesTab  = lazy(() => import('./tabs/GameRulesTab.jsx'));
 const ReportsTab    = lazy(() => import('./tabs/ReportsTab.jsx'));
 const BotsTab       = lazy(() => import('./tabs/BotsTab.jsx'));
 const LiveTab       = lazy(() => import('./tabs/LiveTab.jsx'));
-const StoreTab      = lazy(() => import('./tabs/StoreTab.jsx'));
 const InboxTab      = lazy(() => import('./tabs/InboxTab.jsx'));
 const AuditTab      = lazy(() => import('./tabs/AuditTab.jsx'));
 const SystemTab     = lazy(() => import('./tabs/SystemTab.jsx'));
@@ -56,27 +56,29 @@ const TABS = [
   { id: 'users',      label: 'Users',      subtitle: 'Players, profiles and access', Icon: Users },
   { id: 'categories', label: 'Categories', subtitle: 'Taxonomy and question quality', Icon: FolderTree },
   { id: 'topics',     label: 'Topics',     subtitle: 'Question library and generation', Icon: BookOpen },
-  { id: 'ai-logs',    label: 'AI Logs',    subtitle: 'Generation activity and automatic repair', Icon: Bot },
-  { id: 'config',     label: 'Config',     subtitle: 'Runtime rules and AI models', Icon: Settings },
+  { id: 'ai-logs',    label: 'AI',         subtitle: 'Models, budget, generation activity and automatic repair', Icon: Bot },
+  { id: 'rules',      label: 'Game rules', subtitle: 'Rounds, scoring, XP, ranks and lifelines', Icon: SlidersHorizontal },
   { id: 'reports',    label: 'Reports',    subtitle: 'Player safety and moderation', Icon: Flag },
   { id: 'moderation', label: 'Moderation', subtitle: 'Pictures, player topics, reported questions', Icon: ShieldAlert },
   { id: 'bots',       label: 'Bots',       subtitle: 'Synthetic players and behaviour', Icon: Gamepad2 },
   { id: 'live',       label: 'KWIZ Live',  subtitle: 'Events, schedules and prizes', Icon: Radio },
   { id: 'world',      label: 'Game world', subtitle: 'Clans, missions, crowns, rivals and Discover', Icon: Globe2 },
   { id: 'comms',      label: 'Comms',      subtitle: 'Push campaigns and the launch waitlist', Icon: Megaphone },
-  { id: 'economy',    label: 'Economy',    subtitle: 'Coins, purchases, KWIZ+, ads and signals', Icon: Coins },
-  { id: 'store',      label: 'Store',      subtitle: 'Products and entitlements', Icon: ShoppingBag },
+  { id: 'economy',    label: 'Economy',    subtitle: 'Coins, purchases, KWIZ+, ads, the store and its pricing', Icon: Coins },
   { id: 'audit',      label: 'Audit log',  subtitle: 'Every change, by whom', Icon: ScrollText },
   { id: 'system',     label: 'System',     subtitle: 'Health, errors, the daily digest and cron jobs', Icon: Server },
   { id: 'team',       label: 'Team',       subtitle: 'Admins, agents and keys', Icon: UserCog, ownerOnly: true },
 ];
+
+// View names for the settings search ("Game world · Missions")
+const VIEW_LABELS = { store: 'Store & pricing', clans: 'Clans', missions: 'Missions', crowns: 'Crowns', discover: 'Discover' };
 
 const NAV_GROUPS = [
   { label: 'Command center', ids: ['inbox', 'analytics', 'economy'] },
   { label: 'Content & players', ids: ['users', 'categories', 'topics'] },
   { label: 'Operations', ids: ['reports', 'moderation', 'ai-logs', 'live', 'world', 'comms'] },
   { label: 'Automation', ids: ['bots'] },
-  { label: 'Platform controls', ids: ['config', 'store'] },
+  { label: 'Platform controls', ids: ['rules'] },
   { label: 'Oversight', ids: ['audit', 'system', 'team'] },
 ];
 
@@ -85,9 +87,11 @@ export default function App() {
   const [token, setToken] = useState(() => sessionStorage.getItem('admin_token') || '');
   // Who is signed in ({ id, label, role, via }), from the login answer or GET /admin/me
   const [me, setMe] = useState(() => JSON.parse(sessionStorage.getItem('admin_me') || 'null'));
-  const [activeTab, setActiveTab] = useState('inbox');
+  const hashTab = useNavStore(s => s.tab);
+  const go = useNavStore(s => s.go);
+  const activeTab = TABS.some(t => t.id === hashTab) ? hashTab : 'inbox';
   // Tracks which tabs have been visited — once mounted, tabs are never unmounted
-  const [visitedTabs, setVisitedTabs] = useState(() => new Set(['inbox']));
+  const [visitedTabs, setVisitedTabs] = useState(() => new Set([activeTab]));
   const [openCount, setOpenCount] = useState(0);
   const [liveConnected, setLiveConnected] = useState(socket.connected);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -167,7 +171,7 @@ export default function App() {
   const ActiveIcon = active.Icon;
 
   function selectTab(id) {
-    setActiveTab(id);
+    go(id);
     setSidebarOpen(false);
   }
 
@@ -287,6 +291,7 @@ export default function App() {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <SettingsSearch token={token} tabs={TABS} views={VIEW_LABELS} />
             <span className={`hidden items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold sm:flex
               ${liveConnected
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
@@ -327,11 +332,10 @@ export default function App() {
             {visitedTabs.has('analytics')  && <div style={{ display: activeTab === 'analytics'  ? '' : 'none' }}><Suspense fallback={<Spinner />}><AnalyticsTab  token={token} /></Suspense></div>}
             {visitedTabs.has('users')      && <div style={{ display: activeTab === 'users'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><UsersTab      token={token} /></Suspense></div>}
             {visitedTabs.has('ai-logs')    && <div style={{ display: activeTab === 'ai-logs'    ? '' : 'none' }}><Suspense fallback={<Spinner />}><AILogsTab     token={token} /></Suspense></div>}
-            {visitedTabs.has('config')     && <div style={{ display: activeTab === 'config'     ? '' : 'none' }}><Suspense fallback={<Spinner />}><ConfigTab     token={token} /></Suspense></div>}
+            {visitedTabs.has('rules')      && <div style={{ display: activeTab === 'rules'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><GameRulesTab  token={token} /></Suspense></div>}
             {visitedTabs.has('reports')    && <div style={{ display: activeTab === 'reports'    ? '' : 'none' }}><Suspense fallback={<Spinner />}><ReportsTab    token={token} /></Suspense></div>}
             {visitedTabs.has('bots')       && <div style={{ display: activeTab === 'bots'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><BotsTab       token={token} /></Suspense></div>}
             {visitedTabs.has('live')       && <div style={{ display: activeTab === 'live'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><LiveTab       token={token} /></Suspense></div>}
-            {visitedTabs.has('store')      && <div style={{ display: activeTab === 'store'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><StoreTab      token={token} /></Suspense></div>}
             {visitedTabs.has('categories') && <div style={{ display: activeTab === 'categories' ? '' : 'none' }}><Suspense fallback={<Spinner />}><CategoriesTab token={token} /></Suspense></div>}
           </div>
         </main>

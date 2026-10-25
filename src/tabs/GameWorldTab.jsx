@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { adminFetch, Badge, Btn, Spinner, timeAgo } from '../lib/adminUtils.jsx';
 import { usePlayerStore } from '../store/playerStore';
 import { StatCard, SectionHeading, Table, Pills, n } from '../components/Panels.jsx';
+import SettingsSection from '../components/SettingsSection.jsx';
+import { useFocusView } from '../store/navStore';
 
 const pct = v => (v == null ? '—' : `${Math.round(v * 100)}%`);
 const month = p => (p ? new Date(`${p}T00:00:00Z`).toLocaleDateString(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' }) : '—');
@@ -323,6 +325,7 @@ const VIEWS = [['clans', 'Clans'], ['missions', 'Missions'], ['crowns', 'Crowns'
 export default function GameWorldTab({ token }) {
   const [view, setView] = useState('clans');
   const [key, setKey] = useState(0);
+  useFocusView('world', setView);
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -336,6 +339,7 @@ export default function GameWorldTab({ token }) {
         {view === 'rivals' && <Rivals token={token} />}
         {view === 'discover' && <Discover token={token} />}
       </div>
+      <SettingsSection key={view} token={token} tab="world" view={view} />
     </div>
   );
 }

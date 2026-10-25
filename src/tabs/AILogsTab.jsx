@@ -3,6 +3,7 @@ import { jsonrepair } from 'jsonrepair';
 import { useToastStore } from '../lib/toastStore';
 import { socket } from '../lib/socket';
 import { adminFetch, Btn, Spinner, Paginator } from '../lib/adminUtils.jsx';
+import SettingsSection from '../components/SettingsSection.jsx';
 
 // ── Timeline panel for a single generation log ────────────────────────────────
 function TimelinePanel({ log }) {
@@ -512,6 +513,7 @@ export default function AILogsTab({ token }) {
 
   return (
     <div>
+      <div className="mb-6"><SettingsSection token={token} tab="ai-logs" title="Models and budget" /></div>
       <FailedTopicsWidget token={token} onLogFixed={handleLogFixed} />
 
       <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">

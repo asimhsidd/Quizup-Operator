@@ -13,7 +13,10 @@ backend's `/api/admin/*` routes and its admin socket room.
   (`x-admin-key`) instead. A plain 403 "Forbidden" signs the Operator out (`SESSION_EXPIRED` in
   `lib/adminUtils.jsx`). Never send a game user JWT from this app. Details: `Quizup/docs/platform.md` → Operator admins.
 - **Every write is audited by the API**, so there is nothing to do here for that. The Audit log tab shows it.
-- **Config labels come from the API** (`Quizup/backend/services/configSchema.js`); don't add them here.
+- **Settings labels come from the API** (`Quizup/backend/services/configSchema.js`); don't add them here.
+  There is no Config tab: each setting shows in the tab that owns it (`src/lib/settingsHome.js` maps
+  group or key → tab and view; an unmapped group lands in Game rules), drawn by `components/SettingsSection.jsx`.
+  The header's settings search jumps to any of them.
 - **Google sign-in** needs this app's origin (`https://operator.kwiz.live`, `http://localhost:5174`) in the
   Google Web client's authorised JavaScript origins.
 - **Backend URL:** `VITE_BACKEND_URL` (build time). Empty in dev, where Vite proxies to

@@ -1,12 +1,13 @@
 // Comms: push campaigns to a segment of real players, and the launch waitlist (Quizup
 // lib/campaigns.js). A campaign is previewed first and sent only after a confirm; the API
-// refuses one above the cap (Config → Comms). The waitlist has no email provider behind it:
+// refuses one above the cap (Settings at the bottom). The waitlist has no email provider behind it:
 // export the addresses, send the launch email by hand, then mark them notified.
 import { useEffect, useState } from 'react';
 import { adminFetch, Badge, Btn, Spinner, fmtWhen, timeAgo } from '../lib/adminUtils.jsx';
 import { useToastStore } from '../lib/toastStore';
 import { usePlayerStore } from '../store/playerStore';
 import { StatCard, SectionHeading, Table, n } from '../components/Panels.jsx';
+import SettingsSection from '../components/SettingsSection.jsx';
 
 const TITLE_MAX = 65;
 const BODY_MAX = 240;
@@ -244,6 +245,7 @@ export default function CommsTab({ token }) {
         <SectionHeading>Launch waitlist (kwiz.live)</SectionHeading>
         <Waitlist token={token} />
       </div>
+      <SettingsSection token={token} tab="comms" />
     </div>
   );
 }

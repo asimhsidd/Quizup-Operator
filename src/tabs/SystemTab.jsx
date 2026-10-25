@@ -9,6 +9,7 @@ import { adminFetch, Badge, Btn, Spinner, fmtWhen, timeAgo } from '../lib/adminU
 import { useToastStore } from '../lib/toastStore';
 import { usePlayerStore } from '../store/playerStore';
 import { StatCard, SectionHeading, Pills, n } from '../components/Panels.jsx';
+import SettingsSection from '../components/SettingsSection.jsx';
 
 const usd = v => `$${Number(v ?? 0).toFixed(2)}`;
 const uptime = s => (s >= 86400 ? `${Math.floor(s / 86400)} d ${Math.floor((s % 86400) / 3600)} h` : s >= 3600 ? `${Math.floor(s / 3600)} h ${Math.floor((s % 3600) / 60)} min` : `${Math.floor(s / 60)} min`);
@@ -167,7 +168,7 @@ function Digest({ token }) {
       ))}
       {d.digests.length === 0 && <p className="text-sm text-gray-400">No digests yet; the first is written at 21:00 UTC.</p>}
       <p className="text-xs text-gray-500">
-        Written daily at 21:00 UTC and pushed to the player account whose email matches an owner in Team (Config → System → digest_push).
+        Written daily at 21:00 UTC and pushed to the player account whose email matches an owner in Team (Settings below → digest_push).
       </p>
     </div>
   );
@@ -254,6 +255,7 @@ export default function SystemTab({ token }) {
         {view === 'digest' && <Digest token={token} />}
         {view === 'crons' && <Crons token={token} />}
       </div>
+      <SettingsSection token={token} tab="system" />
     </div>
   );
 }

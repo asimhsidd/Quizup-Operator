@@ -1,15 +1,15 @@
-// Admin → Store: the shop's catalogue (store_products in the KWIZ API). Each row is a
+// Economy → Store & pricing: the shop's catalogue (store_products in the KWIZ API). Each row is a
 // Google Play product: what it gives and how the shop shows it. Money prices are set in
 // Play Console, not here (Play localises them), and a SKU only sells once it exists there
-// with the same id. Coin prices of lifelines, KWIZ+ allowances and the selling switch
-// are in Config (Coins, KWIZ+, Store). docs/monetisation-plan.md in the KWIZ repo.
+// with the same id. The coin, KWIZ+ and ad settings sit under it in the same view; lifeline
+// prices are in Game rules. docs/monetisation-plan.md in the KWIZ repo.
 import { useEffect, useState } from 'react';
 import { adminFetch, Badge, Btn, Spinner } from '../lib/adminUtils.jsx';
 import { useToastStore } from '../lib/toastStore';
 
 const BLANK = { sku: '', kind: 'coins', coins: '', label: '', badge: '', one_time: false, sort: '', active: true };
 
-export default function StoreTab({ token }) {
+export default function StoreCatalogue({ token }) {
   const [products, setProducts] = useState(null);
   const [edit, setEdit] = useState(null); // the row being edited (a copy), or a new one
   const [busy, setBusy] = useState(false);
