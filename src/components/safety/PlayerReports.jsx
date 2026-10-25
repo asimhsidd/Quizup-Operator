@@ -1,14 +1,14 @@
-// Reports: one card per player report, as a case. What the reporter saw (DMs between the
+// Safety → Reports: one card per player report, as a case. What the reporter saw (DMs between the
 // two and the reported player's comments, copied when the report was filed), how often
 // this player has been reported and by how many people, how often the reporter's own
 // reports were dismissed, and the actions: restrict, remove a message, open the player,
 // close with a resolution. API: /admin/reports, /admin/users/:id/restrictions,
 // /admin/messages/:id (Quizup routes/admin.js, routes/adminSafety.js).
 import { useEffect, useState } from 'react';
-import { adminFetch, Badge, Btn, Paginator, fmtWhen, timeAgo } from '../lib/adminUtils.jsx';
-import { useToastStore } from '../lib/toastStore';
-import { usePlayerStore } from '../store/playerStore';
-import { RestrictForm, restrictionLabel } from '../components/PlayerDrawer.jsx';
+import { adminFetch, Badge, Btn, Paginator, fmtWhen, timeAgo } from '../../lib/adminUtils.jsx';
+import { useToastStore } from '../../lib/toastStore';
+import { usePlayerStore } from '../../store/playerStore';
+import { RestrictForm, restrictionLabel } from '../PlayerDrawer.jsx';
 
 const LIMIT = 50;
 
@@ -156,7 +156,7 @@ function ReportCard({ r, token, status, onClosed, onUpdate }) {
   );
 }
 
-export default function ReportsTab({ token }) {
+export default function PlayerReports({ token }) {
   const [reports, setReports] = useState([]);
   const [total, setTotal]     = useState(0);
   const [status, setStatus]   = useState('pending');

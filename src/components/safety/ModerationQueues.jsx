@@ -1,11 +1,10 @@
-// Moderation queues (Quizup routes/adminSafety.js): players' pictures by newest change,
+// Safety's moderation queues (Quizup routes/adminSafety.js): players' pictures by newest change,
 // topics players made, and questions players reported that are still in play (under the
 // auto-pull threshold). Clicking a player opens the player drawer.
 import { useEffect, useState } from 'react';
-import { adminFetch, Badge, Btn, Paginator, Spinner, timeAgo } from '../lib/adminUtils.jsx';
-import { useToastStore } from '../lib/toastStore';
-import { usePlayerStore } from '../store/playerStore';
-import SettingsSection from '../components/SettingsSection.jsx';
+import { adminFetch, Badge, Btn, Paginator, Spinner, timeAgo } from '../../lib/adminUtils.jsx';
+import { useToastStore } from '../../lib/toastStore';
+import { usePlayerStore } from '../../store/playerStore';
 
 const LIMIT = 60;
 
@@ -25,7 +24,7 @@ function useQueue(path, token, version) {
   return { data, setData, error, page, setPage, reload: () => load(page) };
 }
 
-function Pictures({ token }) {
+export function Pictures({ token }) {
   const { openPlayer, version, changed } = usePlayerStore();
   const { data, error, page, setPage, reload } = useQueue('/admin/moderation/avatars', token, version);
   const { addToast } = useToastStore();
@@ -67,7 +66,7 @@ function Pictures({ token }) {
   );
 }
 
-function PlayerTopics({ token }) {
+export function PlayerTopics({ token }) {
   const { openPlayer, version } = usePlayerStore();
   const { data, setData, error, page, setPage } = useQueue('/admin/moderation/topics', token, version);
   const { addToast } = useToastStore();
@@ -110,7 +109,7 @@ function PlayerTopics({ token }) {
   );
 }
 
-function QuestionReports({ token }) {
+export function QuestionReports({ token }) {
   const { data, setData, error } = useQueue('/admin/moderation/question-reports', token, 0);
   const { addToast } = useToastStore();
 
@@ -118,7 +117,7 @@ function QuestionReports({ token }) {
     try {
       await adminFetch(`/admin/moderation/question-reports/${q.id}`, { method: 'POST', body: { action } }, token);
       setData(d => ({ ...d, questions: d.questions.filter(x => x.id !== q.id) }));
-      addToast(action === 'pull' ? 'Pulled from play (now in Categories → flagged)' : 'Kept in play', 'success');
+      addToast(action === 'pull' ? 'Pulled from play (now in Question quality)' : 'Kept in play', 'success');
     } catch (err) {
       addToast(err.message, 'error');
     }
@@ -128,7 +127,7 @@ function QuestionReports({ token }) {
   if (!data) return <Spinner />;
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-xs text-gray-500">Questions reported by fewer than {data.threshold} players (that many pull one automatically). Pull sends it to the flagged list in Categories.</p>
+      <p className="text-xs text-gray-500">Questions reported by fewer than {data.threshold} players (that many pull one automatically). Pull takes it out of play and into Question quality.</p>
       {data.questions.map(q => (
         <div key={q.id} className="rounded-xl border border-[#E0E0E0] bg-white p-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -146,34 +145,6 @@ function QuestionReports({ token }) {
         </div>
       ))}
       {data.questions.length === 0 && <p className="py-8 text-center text-gray-400">No reported questions waiting.</p>}
-    </div>
-  );
-}
-
-const QUEUES = [
-  ['pictures', 'Pictures', Pictures],
-  ['topics', 'Player topics', PlayerTopics],
-  ['questions', 'Question reports', QuestionReports],
-];
-
-export default function ModerationTab({ token }) {
-  const [queue, setQueue] = useState('pictures');
-  const Active = QUEUES.find(q => q[0] === queue)[2];
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold text-[#1A1A2E]">Moderation</h2>
-        <div className="flex gap-2">
-          {QUEUES.map(([id, label]) => (
-            <button key={id} type="button" onClick={() => setQueue(id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${queue === id ? 'bg-[#E8453C] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <Active token={token} />
-      <SettingsSection token={token} tab="moderation" />
     </div>
   );
 }

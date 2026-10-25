@@ -15,7 +15,7 @@ const GROUP_HOME = {
   'Clans & crowns':     { tab: 'world', view: 'clans' },
   'Social & discovery': { tab: 'world', view: 'discover' },
   'Content':            { tab: 'library' },
-  'Safety':             { tab: 'moderation' },
+  'Safety':             { tab: 'safety' },
   'Comms':              { tab: 'comms' },
   'System':             { tab: 'system' },
   'AI models':          { tab: 'ai-logs' },

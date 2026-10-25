@@ -8,7 +8,6 @@ import {
   SlidersHorizontal,
   Gamepad2,
   BarChart2,
-  Flag,
   Radio,
   Menu,
   X,
@@ -35,14 +34,13 @@ const UsersTab      = lazy(() => import('./tabs/UsersTab.jsx'));
 const LibraryTab    = lazy(() => import('./tabs/LibraryTab.jsx'));
 const AILogsTab     = lazy(() => import('./tabs/AILogsTab.jsx'));
 const GameRulesTab  = lazy(() => import('./tabs/GameRulesTab.jsx'));
-const ReportsTab    = lazy(() => import('./tabs/ReportsTab.jsx'));
 const BotsTab       = lazy(() => import('./tabs/BotsTab.jsx'));
 const LiveTab       = lazy(() => import('./tabs/LiveTab.jsx'));
 const InboxTab      = lazy(() => import('./tabs/InboxTab.jsx'));
 const AuditTab      = lazy(() => import('./tabs/AuditTab.jsx'));
 const SystemTab     = lazy(() => import('./tabs/SystemTab.jsx'));
 const TeamTab       = lazy(() => import('./tabs/TeamTab.jsx'));
-const ModerationTab = lazy(() => import('./tabs/ModerationTab.jsx'));
+const SafetyTab     = lazy(() => import('./tabs/SafetyTab.jsx'));
 const EconomyTab    = lazy(() => import('./tabs/EconomyTab.jsx'));
 const GameWorldTab  = lazy(() => import('./tabs/GameWorldTab.jsx'));
 const CommsTab      = lazy(() => import('./tabs/CommsTab.jsx'));
@@ -55,8 +53,7 @@ const TABS = [
   { id: 'library',    label: 'Library',    subtitle: 'Categories, topics, questions and answers', Icon: Library },
   { id: 'ai-logs',    label: 'AI',         subtitle: 'Models, budget, generation activity and automatic repair', Icon: Bot },
   { id: 'rules',      label: 'Game rules', subtitle: 'Rounds, scoring, XP, ranks and lifelines', Icon: SlidersHorizontal },
-  { id: 'reports',    label: 'Reports',    subtitle: 'Player safety and moderation', Icon: Flag },
-  { id: 'moderation', label: 'Moderation', subtitle: 'Pictures, player topics, reported questions', Icon: ShieldAlert },
+  { id: 'safety',     label: 'Safety',     subtitle: 'Reports, moderation queues and question quality', Icon: ShieldAlert },
   { id: 'bots',       label: 'Bots',       subtitle: 'Synthetic players and behaviour', Icon: Gamepad2 },
   { id: 'live',       label: 'KWIZ Live',  subtitle: 'Events, schedules and prizes', Icon: Radio },
   { id: 'world',      label: 'Game world', subtitle: 'Clans, missions, crowns, rivals and Discover', Icon: Globe2 },
@@ -71,12 +68,12 @@ const TABS = [
 const VIEW_LABELS = { store: 'Store & pricing', clans: 'Clans', missions: 'Missions', crowns: 'Crowns', discover: 'Discover' };
 
 const NAV_GROUPS = [
-  { label: 'Command center', ids: ['inbox', 'analytics', 'economy'] },
-  { label: 'Content & players', ids: ['users', 'library'] },
-  { label: 'Operations', ids: ['reports', 'moderation', 'ai-logs', 'live', 'world', 'comms'] },
-  { label: 'Automation', ids: ['bots'] },
-  { label: 'Platform controls', ids: ['rules'] },
-  { label: 'Oversight', ids: ['audit', 'system', 'team'] },
+  { label: 'Command', ids: ['inbox', 'analytics'] },
+  { label: 'Players & safety', ids: ['users', 'safety', 'comms'] },
+  { label: 'Content', ids: ['library', 'ai-logs', 'bots'] },
+  { label: 'Game', ids: ['rules', 'live', 'world'] },
+  { label: 'Money', ids: ['economy'] },
+  { label: 'Platform', ids: ['system', 'audit', 'team'] },
 ];
 
 // ── Admin shell ────────────────────────────────────────────────────────────────
@@ -321,7 +318,7 @@ export default function App() {
             {visitedTabs.has('inbox')      && <div style={{ display: activeTab === 'inbox'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><InboxTab      token={token} /></Suspense></div>}
             {visitedTabs.has('audit')      && <div style={{ display: activeTab === 'audit'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><AuditTab      token={token} /></Suspense></div>}
             {visitedTabs.has('system')     && <div style={{ display: activeTab === 'system'     ? '' : 'none' }}><Suspense fallback={<Spinner />}><SystemTab     token={token} /></Suspense></div>}
-            {visitedTabs.has('moderation') && <div style={{ display: activeTab === 'moderation' ? '' : 'none' }}><Suspense fallback={<Spinner />}><ModerationTab token={token} /></Suspense></div>}
+            {visitedTabs.has('safety')     && <div style={{ display: activeTab === 'safety'     ? '' : 'none' }}><Suspense fallback={<Spinner />}><SafetyTab     token={token} /></Suspense></div>}
             {visitedTabs.has('economy')    && <div style={{ display: activeTab === 'economy'    ? '' : 'none' }}><Suspense fallback={<Spinner />}><EconomyTab    token={token} /></Suspense></div>}
             {visitedTabs.has('world')      && <div style={{ display: activeTab === 'world'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><GameWorldTab  token={token} /></Suspense></div>}
             {visitedTabs.has('comms')      && <div style={{ display: activeTab === 'comms'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><CommsTab      token={token} /></Suspense></div>}
@@ -330,7 +327,6 @@ export default function App() {
             {visitedTabs.has('users')      && <div style={{ display: activeTab === 'users'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><UsersTab      token={token} /></Suspense></div>}
             {visitedTabs.has('ai-logs')    && <div style={{ display: activeTab === 'ai-logs'    ? '' : 'none' }}><Suspense fallback={<Spinner />}><AILogsTab     token={token} /></Suspense></div>}
             {visitedTabs.has('rules')      && <div style={{ display: activeTab === 'rules'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><GameRulesTab  token={token} /></Suspense></div>}
-            {visitedTabs.has('reports')    && <div style={{ display: activeTab === 'reports'    ? '' : 'none' }}><Suspense fallback={<Spinner />}><ReportsTab    token={token} /></Suspense></div>}
             {visitedTabs.has('bots')       && <div style={{ display: activeTab === 'bots'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><BotsTab       token={token} /></Suspense></div>}
             {visitedTabs.has('live')       && <div style={{ display: activeTab === 'live'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><LiveTab       token={token} /></Suspense></div>}
           </div>

@@ -6,9 +6,12 @@ import { create } from 'zustand';
 // `focus` asks a tab to show a view and a setting: the header's settings search sets it,
 // the tab switches to the view, and the SettingsSection holding the key opens and scrolls to it.
 
+// Old tab ids (bookmarks from before the 2026-10-25 tidy-up) → where that went
+const MOVED = { config: 'rules', store: 'economy', categories: 'library', topics: 'library', reports: 'safety', moderation: 'safety' };
+
 function parseHash() {
   const [tab, ...path] = window.location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
-  return { tab: tab || 'inbox', path: path.map(decodeURIComponent) };
+  return { tab: MOVED[tab] ?? (tab || 'inbox'), path: path.map(decodeURIComponent) };
 }
 
 function writeHash(tab, path) {
