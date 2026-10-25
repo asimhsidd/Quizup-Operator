@@ -295,6 +295,113 @@ function CreateBotPanel({ token, onClose, onCreated }) {
   );
 }
 
+// Random matches per topic (GET /admin/queue-health): how many of players' matches were
+// against a person, and how long they waited. A topic where most matches are already
+// against people is the evidence for switching bots off.
+const READY_SHARE = 0.7;
+const READY_MIN_MATCHES = 30;
+
+function pct(n, total) { return total ? `${Math.round((n / total) * 100)}%` : '—'; }
+function secs(ms) { return ms == null ? '—' : `${(ms / 1000).toFixed(ms < 10_000 ? 1 : 0)}s`; }
+
+function QueueHealth({ token }) {
+  const [days, setDays] = useState(7);
+  const [data, setData] = useState(null);
+  const { addToast } = useToastStore();
+
+  useEffect(() => {
+    let live = true;
+    setData(null);
+    adminFetch(`/admin/queue-health?days=${days}`, {}, token)
+      .then(d => { if (live) setData(d); })
+      .catch(err => addToast(err.message, 'error'));
+    return () => { live = false; };
+  }, [days]);
+
+  const t = data?.total;
+  return (
+    <div className="bg-white border border-[#E0E0E0] shadow-sm rounded-xl p-5">
+      <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+        <h3 className="font-extrabold text-[#1A1A2E] text-base">Queue health</h3>
+        <select
+          value={days}
+          onChange={e => setDays(parseInt(e.target.value))}
+          className="border border-[#E0E0E0] rounded-lg px-3 py-1.5 text-sm text-[#1A1A2E] bg-white"
+        >
+          {[1, 7, 30, 90].map(n => <option key={n} value={n}>Last {n === 1 ? '24 hours' : `${n} days`}</option>)}
+        </select>
+      </div>
+      <div className="text-xs text-gray-400 mb-4">
+        Who players met in random matches. &ldquo;Ready for fewer bots&rdquo; marks a topic where at least {Math.round(READY_SHARE * 100)}% of
+        {' '}{READY_MIN_MATCHES}+ matches were against a person.
+      </div>
+      {!data ? <Spinner /> : !t?.matches ? (
+        <div className="text-sm text-gray-400 py-4">No random matches in this period.</div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+            {[
+              ['Matches', t.matches],
+              ['Against a person', pct(t.vs_human, t.matches)],
+              ['Against a bot', pct(t.vs_bot + t.vs_seeded, t.matches)],
+              ['Median wait', secs(t.median_wait_ms)],
+              ['Slowest 10% wait', secs(t.p90_wait_ms)],
+            ].map(([label, value]) => (
+              <div key={label} className="bg-gray-50 rounded-lg px-3 py-2">
+                <div className="text-xs text-gray-400">{label}</div>
+                <div className="text-lg font-extrabold text-[#1A1A2E]">{value}</div>
+              </div>
+            ))}
+          </div>
+          {data.daily.length > 1 && (
+            <div className="text-xs text-gray-500 mb-4 flex flex-wrap gap-x-3 gap-y-1">
+              <span className="font-semibold">Against a person by day:</span>
+              {data.daily.map(d => (
+                <span key={d.day}>{new Date(d.day).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} {pct(d.vs_human, d.matches)}</span>
+              ))}
+            </div>
+          )}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
+                  <th className="px-3 py-2">Topic</th>
+                  <th className="px-3 py-2">Matches</th>
+                  <th className="px-3 py-2">Players</th>
+                  <th className="px-3 py-2">vs person</th>
+                  <th className="px-3 py-2">vs bot after wait</th>
+                  <th className="px-3 py-2">vs waiting bot</th>
+                  <th className="px-3 py-2">Median wait</th>
+                  <th className="px-3 py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.topics.map(r => {
+                  const ready = r.matches >= READY_MIN_MATCHES && r.vs_human / r.matches >= READY_SHARE;
+                  return (
+                    <tr key={r.topic_id} className="border-b border-gray-50">
+                      <td className="px-3 py-2 font-semibold text-[#1A1A2E]">{r.name}</td>
+                      <td className="px-3 py-2">{r.matches}</td>
+                      <td className="px-3 py-2">{r.players}</td>
+                      <td className="px-3 py-2 font-bold">{pct(r.vs_human, r.matches)}</td>
+                      <td className="px-3 py-2 text-gray-500">{pct(r.vs_bot, r.matches)}</td>
+                      <td className="px-3 py-2 text-gray-500">{pct(r.vs_seeded, r.matches)}</td>
+                      <td className="px-3 py-2 text-gray-500">{secs(r.median_wait_ms)}</td>
+                      <td className="px-3 py-2">
+                        {ready && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Ready for fewer bots</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function BotsTab({ token }) {
   const [bots, setBots]             = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -379,6 +486,9 @@ export default function BotsTab({ token }) {
     { key: 'scheduler_max_delay_ms',                 label: 'Tick interval max',       unit: 's', isMs: true, hint: 'Maximum time between global bot activity ticks (default 180s = 3 min)' },
     { key: 'bot_cooldown_ms',                        label: 'Per-bot cooldown',        unit: 's', isMs: true, hint: 'How long before the same bot can act again (default 900s = 15 min)' },
     { key: 'max_challenges_per_online_user_per_day', label: 'Max challenges per user/day', unit: '',  isMs: false, hint: 'Max bot challenges a single real user can receive in 24 hours (default 3)' },
+    { key: 'queue_seed_topics',                      label: 'Topics with a bot waiting', unit: '', isMs: false, hint: 'Popular topics that keep a bot waiting in their queue, so the header pill shows a match to join. 0 turns it off (default 3)' },
+    { key: 'queue_seed_per_topic',                   label: 'Bots waiting per topic',  unit: '',  isMs: false, hint: 'How many bots wait in each of those topics (default 1)' },
+    { key: 'queue_seed_stay_ms',                     label: 'Waiting bot stays',       unit: 's', isMs: true, hint: 'Each waits about this long (±50%) and leaves; another may take its place (default 90s)' },
   ];
 
   const challengeOfflineEnabled = !!settings['bots_challenge_offline_users'];
@@ -493,6 +603,8 @@ export default function BotsTab({ token }) {
           ))}
         </div>
       </div>
+
+      <QueueHealth token={token} />
 
       {/* Bot list */}
       <div>
