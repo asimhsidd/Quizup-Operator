@@ -486,7 +486,9 @@ export default function BotsTab({ token }) {
     { key: 'scheduler_max_delay_ms',                 label: 'Tick interval max',       unit: 's', isMs: true, hint: 'Maximum time between global bot activity ticks (default 180s = 3 min)' },
     { key: 'bot_cooldown_ms',                        label: 'Per-bot cooldown',        unit: 's', isMs: true, hint: 'How long before the same bot can act again (default 900s = 15 min)' },
     { key: 'max_challenges_per_online_user_per_day', label: 'Max challenges per user/day', unit: '',  isMs: false, hint: 'Max bot challenges a single real user can receive in 24 hours (default 3)' },
-    { key: 'queue_seed_topics',                      label: 'Topics with a bot waiting', unit: '', isMs: false, hint: 'Popular topics that keep a bot waiting in their queue, so the header pill shows a match to join. 0 turns it off (default 3)' },
+    { key: 'queue_seed_topics',                      label: 'Topics with a bot waiting', unit: '', isMs: false, hint: 'Topics that keep a bot waiting in their queue, so the header pill shows a match to join. 0 turns it off (default 3)' },
+    { key: 'queue_seed_pool',                        label: 'Popular pool',            unit: '',  isMs: false, hint: 'Those topics are drawn from this many of the week\'s most played (default 30)' },
+    { key: 'queue_seed_discovery',                   label: 'Discovery topics',        unit: '',  isMs: false, hint: 'How many of them come from any topic instead, to spread play across the library. 0 = popular only (default 1)' },
     { key: 'queue_seed_per_topic',                   label: 'Bots waiting per topic',  unit: '',  isMs: false, hint: 'How many bots wait in each of those topics (default 1)' },
     { key: 'queue_seed_stay_ms',                     label: 'Waiting bot stays',       unit: 's', isMs: true, hint: 'Each waits about this long (±50%) and leaves; another may take its place (default 90s)' },
   ];
