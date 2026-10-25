@@ -21,6 +21,7 @@ import {
   Coins,
   Globe2,
   Megaphone,
+  ChevronDown,
 } from 'lucide-react';
 import { adminFetch, Spinner, SESSION_EXPIRED } from './lib/adminUtils.jsx';
 import LoginGate from './components/LoginGate.jsx';
@@ -89,6 +90,8 @@ export default function App() {
   const [openCount, setOpenCount] = useState(0);
   const [liveConnected, setLiveConnected] = useState(socket.connected);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Sidebar groups folded away, remembered on this browser
+  const [collapsed, setCollapsed] = useState(() => new Set(JSON.parse(localStorage.getItem('nav_collapsed') || '[]')));
   const { addToast } = useToastStore();
 
   useEffect(() => {
@@ -140,6 +143,15 @@ export default function App() {
       return new Set([...prev, activeTab]);
     });
   }, [activeTab]);
+
+  function toggleGroup(label) {
+    setCollapsed(prev => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label); else next.add(label);
+      localStorage.setItem('nav_collapsed', JSON.stringify([...next]));
+      return next;
+    });
+  }
 
   function logout() {
     sessionStorage.removeItem('admin_token');
@@ -207,15 +219,28 @@ export default function App() {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-5">
-          {NAV_GROUPS.map(group => (
+          {NAV_GROUPS.map(group => {
+            const folded = collapsed.has(group.label);
+            return (
             <div key={group.label} className="mb-5 last:mb-0">
-              <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">
-                {group.label}
-              </div>
+              <button
+                type="button"
+                onClick={() => toggleGroup(group.label)}
+                aria-expanded={!folded}
+                className="group flex w-full items-center gap-2 px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500 hover:text-slate-300"
+              >
+                <span>{group.label}</span>
+                {folded && group.ids.includes('inbox') && openCount > 0 && (
+                  <span className="rounded-full bg-[#E8453C] px-1.5 py-px text-[9px] tracking-normal text-white">{openCount}</span>
+                )}
+                <ChevronDown size={13} className={`ml-auto transition-transform ${folded ? '-rotate-90' : ''}`} />
+              </button>
               <div className="space-y-1">
                 {group.ids.map(id => {
                   const tab = TABS.find(item => item.id === id);
                   if (tab.ownerOnly && me?.role !== 'owner') return null;
+                  // A folded group still shows the tab you're on
+                  if (folded && activeTab !== id) return null;
                   const Icon = tab.Icon;
                   const selected = activeTab === id;
                   return (
@@ -239,7 +264,8 @@ export default function App() {
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </nav>
 
         <div className="shrink-0 border-t border-white/10 p-3">
