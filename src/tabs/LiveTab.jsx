@@ -1,11 +1,17 @@
 // Admin → Live: the KWIZ Live switch, its daily schedule and prize, recent events,
-// and manual events (schedule one, start one now, cancel). See lib/live.js.
-// Tap an event for its entrants, eliminations and lives (lib/gameOps.js). Bots are left out.
+// and manual events (schedule one with a name, mode and theme; start one now, cancel).
+// See lib/live.js. Tap an event for its entrants, eliminations and lives (lib/gameOps.js).
+// Bots are left out. Themes, Word Rush puzzles and round reports are views of their own.
 import { Fragment, useEffect, useState } from 'react';
 import { adminFetch, Badge, Btn, Spinner, timeAgo } from '../lib/adminUtils.jsx';
 import { usePlayerStore } from '../store/playerStore';
-import { StatCard, Table, n } from '../components/Panels.jsx';
+import { Pills, StatCard, Table, n } from '../components/Panels.jsx';
 import SettingsSection from '../components/SettingsSection.jsx';
+import LiveThemes from '../components/live/LiveThemes.jsx';
+import LivePuzzles from '../components/live/LivePuzzles.jsx';
+import LiveReports from '../components/live/LiveReports.jsx';
+
+const MODES = [['classic', 'Classic'], ['word_rush', 'Word Rush']];
 
 const STATUS_COLOR = {
   scheduled: 'bg-cyan-100 text-cyan-700',
@@ -56,10 +62,23 @@ function EventDetail({ id, token }) {
 }
 
 export default function LiveTab({ token }) {
+  const [view, setView] = useState('events');
+  return (
+    <div className="flex flex-col gap-5">
+      <Pills options={[['events', 'Events'], ['themes', 'Themes'], ['puzzles', 'Word Rush puzzles'], ['reports', 'Reports']]} value={view} onChange={setView} />
+      {view === 'events' && <LiveEvents token={token} />}
+      {view === 'themes' && <LiveThemes token={token} />}
+      {view === 'puzzles' && <LivePuzzles token={token} />}
+      {view === 'reports' && <LiveReports token={token} />}
+    </div>
+  );
+}
+
+function LiveEvents({ token }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ startsAt: '', prizeXp: '', minPlayers: '', questionCount: '' });
+  const [form, setForm] = useState({ startsAt: '', prizeXp: '', minPlayers: '', questionCount: '', name: '', mode: 'classic', themeId: '' });
   const [openId, setOpenId] = useState(null);
 
   async function load() {
@@ -115,6 +134,7 @@ export default function LiveTab({ token }) {
               method: 'POST',
               body: {
                 startsAt: new Date(form.startsAt).toISOString(),
+                name: form.name || null, mode: form.mode, themeId: form.themeId || null,
                 ...(form.prizeXp && { prizeXp: Number(form.prizeXp) }),
                 ...(form.minPlayers && { minPlayers: Number(form.minPlayers) }),
                 ...(form.questionCount && { questionCount: Number(form.questionCount) }),
@@ -122,6 +142,27 @@ export default function LiveTab({ token }) {
             }, token));
           }}
         >
+          <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600 col-span-2 sm:col-span-2">
+            Event name (optional)
+            <input id="live-name" maxLength={60} value={form.name} placeholder="e.g. Halloween Champs"
+                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                   className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-gray-900" />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
+            Mode
+            <select id="live-mode" value={form.mode} onChange={e => setForm(f => ({ ...f, mode: e.target.value }))}
+                    className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-gray-900">
+              {MODES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600 col-span-2 sm:col-span-2">
+            Theme
+            <select id="live-theme" value={form.themeId} onChange={e => setForm(f => ({ ...f, themeId: e.target.value }))}
+                    className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-gray-900">
+              <option value="">Default ({data.themes?.find(t => t.is_default)?.name ?? 'KWIZ Arena'})</option>
+              {(data.themes ?? []).filter(t => !t.is_default).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </label>
           <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600 col-span-2 sm:col-span-2">
             Starts at (your time)
             <input id="live-starts" type="datetime-local" required value={form.startsAt}
@@ -136,24 +177,53 @@ export default function LiveTab({ token }) {
                      className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-gray-900" />
             </label>
           ))}
-          <div className="col-span-2 sm:col-span-5"><Btn type="submit" variant="primary" disabled={busy}>Schedule</Btn></div>
+          <div className="col-span-2 sm:col-span-5 flex items-center gap-3">
+            <Btn type="submit" variant="primary" disabled={busy}>Schedule</Btn>
+            {form.mode === 'word_rush' && (
+              <span className="text-xs text-gray-500">
+                Word Rush puzzles playable now: {Object.values(data.wordRushStock ?? {}).reduce((a, b) => a + b, 0)} (by difficulty {[1, 2, 3, 4, 5].map(k => `${k}: ${data.wordRushStock?.[k] ?? 0}`).join(', ')}).
+                The mode and theme are copied onto the event when it starts.
+              </span>
+            )}
+          </div>
         </form>
       </section>
 
       <section className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-            <tr>{['Starts', 'Status', 'Joined', 'Winners', 'Prize each', 'Lives', ''].map(h => <th key={h} className="text-left px-4 py-2">{h}</th>)}</tr>
+            <tr>{['Starts', 'Event', 'Status', 'Joined', 'Winners', 'Prize each', 'Lives', ''].map(h => <th key={h} className="text-left px-4 py-2">{h}</th>)}</tr>
           </thead>
           <tbody>
             {data.events.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-500">No events yet.</td></tr>
+              <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-500">No events yet.</td></tr>
             )}
             {data.events.map(e => (
               <Fragment key={e.id}>
               <tr className={`border-t border-gray-100 cursor-pointer hover:bg-gray-50 ${openId === e.id ? 'bg-gray-50' : ''}`}
                   onClick={() => setOpenId(id => (id === e.id ? null : e.id))}>
                 <td className="px-4 py-2 tabular-nums">{openId === e.id ? '▾ ' : '▸ '}{new Date(e.starts_at).toLocaleString()}</td>
+                <td className="px-4 py-2 text-xs" onClick={ev => e.status === 'scheduled' && ev.stopPropagation()}>
+                  <div className="font-semibold text-gray-800">{e.name ?? 'KWIZ Live'}</div>
+                  {e.status === 'scheduled' ? (
+                    <div className="flex gap-1 mt-1">
+                      <select value={e.mode} disabled={busy} aria-label="Mode"
+                              onChange={ev => act(() => adminFetch(`/admin/live/events/${e.id}`, { method: 'PUT', body: { mode: ev.target.value } }, token))}
+                              className="border border-gray-300 rounded px-1 py-0.5">
+                        {MODES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                      </select>
+                      <select value={e.theme_id ?? ''} disabled={busy} aria-label="Theme"
+                              onChange={ev => act(() => adminFetch(`/admin/live/events/${e.id}`, { method: 'PUT', body: { themeId: ev.target.value || null } }, token))}
+                              className="border border-gray-300 rounded px-1 py-0.5">
+                        <option value="">Default theme</option>
+                        {(data.themes ?? []).filter(t => !t.is_default).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="text-gray-500">{e.mode === 'word_rush' ? 'Word Rush' : 'Classic'} · {e.theme?.name ?? e.theme_name ?? 'default theme'}
+                      {e.open_reports > 0 && <span className="ml-1 text-amber-700 font-semibold">· {e.open_reports} reports</span>}</div>
+                  )}
+                </td>
                 <td className="px-4 py-2">
                   <Badge color={STATUS_COLOR[e.status]}>{e.status}</Badge>
                   {e.practice && <span className="ml-1 text-xs text-gray-500">practice</span>}
@@ -175,7 +245,7 @@ export default function LiveTab({ token }) {
               </tr>
               {openId === e.id && (
                 <tr className="border-t border-gray-100 bg-gray-50/60">
-                  <td colSpan={7} className="px-4 py-4"><EventDetail id={e.id} token={token} /></td>
+                  <td colSpan={8} className="px-4 py-4"><EventDetail id={e.id} token={token} /></td>
                 </tr>
               )}
               </Fragment>
