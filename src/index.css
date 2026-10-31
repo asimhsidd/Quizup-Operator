@@ -8,3 +8,19 @@ body {
   color: #1A1A2E;
   font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
+
+/* Live → Themes preview effects: the game's (Quizup pages/live/arena.css) in px for the 210×400 phone */
+.op-fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.op-fx i { position: absolute; top: -12px; display: block; border-radius: 999px; will-change: transform; }
+.op-fx-snow i { width: 5px; height: 5px; background: #FFFFFF; opacity: 0.75; animation: op-fall linear infinite; }
+.op-fx-confetti i { width: 5px; height: 9px; border-radius: 2px; animation: op-fall-spin linear infinite; }
+.op-fx-embers i { top: auto; bottom: -12px; width: 4px; height: 4px; background: var(--fx-accent); opacity: 0.8; animation: op-rise linear infinite; }
+.op-fx-fog i {
+  top: auto; width: 290px; height: 150px; border-radius: 50%; left: -40px;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--fx-text) 14%, transparent), transparent);
+  animation: op-drift ease-in-out infinite alternate;
+}
+@keyframes op-fall { to { transform: translateY(440px); } }
+@keyframes op-fall-spin { to { transform: translateY(440px) rotate(540deg); } }
+@keyframes op-rise { from { transform: translateY(0); opacity: 0.9; } to { transform: translateY(-420px); opacity: 0; } }
+@keyframes op-drift { from { transform: translateX(-25px); } to { transform: translateX(25px); } }

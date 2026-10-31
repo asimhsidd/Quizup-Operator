@@ -2,7 +2,7 @@
 // (Quizup backend/lib/liveTheme.js, routes/adminLive.js). A theme must pass the readability
 // check to save; the preview shows a Word Rush round in it. Events copy their theme when
 // they start, so an edit never changes a running event.
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { adminFetch, adminUpload, Badge, Btn, Spinner } from '../../lib/adminUtils.jsx';
 
 const KEYS = [
@@ -21,6 +21,32 @@ const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
 
 const BLANK = { name: '', effect: 'none', palette: { ground: '#0E1230', surface: '#1B2150', line: '#343C7A', accent: '#FF4D8D', onAccent: '#14142B', accent2: '#2EC4D6', text: '#F3F5FF', muted: '#B9C0EA' } };
 
+// The game's effect (Quizup pages/live/Arena.jsx), scaled to the preview phone (index.css .op-fx)
+function particles(n, seed) {
+  return Array.from({ length: n }, (_, i) => {
+    const r = k => ((Math.sin((i + 1) * (seed + k) * 12.9898) * 43758.5453) % 1 + 1) % 1;
+    return { left: `${Math.round(r(1) * 100)}%`, dur: 6 + r(2) * 8, delay: -r(3) * 14, alt: r(5) > 0.5 };
+  });
+}
+
+function Effect({ kind, p }) {
+  const dots = useMemo(() => particles(kind === 'fog' ? 3 : 22, kind.length), [kind]);
+  if (!kind || kind === 'none') return null;
+  return (
+    <div className={`op-fx op-fx-${kind}`} style={{ '--fx-accent': p.accent, '--fx-text': p.text }} aria-hidden="true">
+      {dots.map((d, i) => (
+        <i key={i} style={{
+          left: kind === 'fog' ? undefined : d.left,
+          bottom: kind === 'fog' ? `${i * 28}%` : undefined,
+          animationDuration: `${kind === 'fog' ? d.dur * 2 : d.dur}s`,
+          animationDelay: `${d.delay}s`,
+          background: kind === 'confetti' ? (d.alt ? p.accent : p.accent2) : undefined,
+        }} />
+      ))}
+    </div>
+  );
+}
+
 function Preview({ t }) {
   const p = t.palette;
   const ok = KEYS.every(([k]) => HEX.test(p[k] ?? ''));
@@ -29,6 +55,7 @@ function Preview({ t }) {
     <div className="w-[210px] h-[400px] rounded-[24px] border-[6px] border-gray-900 overflow-hidden relative"
          style={{ background: `linear-gradient(180deg, ${p.surface} 0%, ${p.ground} 55%, #000 160%)`, color: p.text }}>
       {t.bg_image && <div className="absolute inset-0 bg-cover bg-center opacity-60" style={{ backgroundImage: `url("${t.bg_image}")` }} />}
+      <Effect kind={t.effect ?? 'none'} p={p} />
       <div className="relative h-full flex flex-col gap-2.5 p-3 text-[10px]">
         <div className="flex justify-between font-bold"><span>QUESTION 4 OF 12</span><span style={{ color: p.muted }}>168 still in</span></div>
         <div className="h-1.5 rounded-full" style={{ background: p.line }}><div className="h-full w-3/5 rounded-full" style={{ background: p.accent }} /></div>
