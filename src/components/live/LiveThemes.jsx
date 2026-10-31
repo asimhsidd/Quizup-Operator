@@ -77,6 +77,9 @@ function Preview({ t }) {
   );
 }
 
+// Snap Firefox's file picker sometimes hands back nothing; say so rather than do nothing
+const NO_FILE = 'The browser didn\'t pass on a picture. Try again, drop it on the box, or paste it (Ctrl+V).';
+
 export default function LiveThemes({ token }) {
   const [themes, setThemes] = useState(null);
   const [sel, setSel] = useState(null);   // id, or 'new'
@@ -119,7 +122,7 @@ export default function LiveThemes({ token }) {
     setBusy(false);
   }
   async function upload(file) {
-    if (!file) return;
+    if (!file?.type?.startsWith('image/')) return setError(NO_FILE);
     const fd = new FormData();
     fd.append('image', file);
     await act(() => adminUpload(`/admin/live/themes/${sel}/background`, fd, token));
@@ -147,17 +150,21 @@ export default function LiveThemes({ token }) {
                    className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-gray-900" />
           </label>
           {!isNew && (
-            <div className="flex items-center gap-3 text-sm">
+            <div className="flex items-center gap-3 text-sm"
+                 onPaste={e => { const f = e.clipboardData?.files?.[0]; if (f) { e.preventDefault(); upload(f); } }}
+                 onDragOver={e => e.preventDefault()}
+                 onDrop={e => { e.preventDefault(); upload(e.dataTransfer?.files?.[0]); }}>
               {draft.bg_image
                 ? <img src={draft.bg_image} alt="" className="w-16 h-28 object-cover rounded-lg border border-gray-200" />
                 : <span className="w-16 h-28 rounded-lg border border-dashed border-gray-300" />}
               <div className="flex flex-col gap-1.5 text-xs text-gray-600">
                 <span className="font-semibold text-gray-800">Background picture</span>
-                <span>Portrait, at least 1080 wide. Keep the middle calm: the round sits there.</span>
+                <span>Portrait, at least 1080 wide. Keep the middle calm: the round sits there. You can also drop a picture here, or paste one (Ctrl+V).</span>
                 <div className="flex gap-2">
                   <label className="px-3 py-1.5 rounded-lg border border-gray-300 cursor-pointer text-gray-800">
                     {draft.bg_image ? 'Replace' : 'Upload'}
-                    <input type="file" accept="image/*" className="hidden" onChange={e => upload(e.target.files?.[0])} />
+                    <input type="file" accept="image/*" className="hidden"
+                           onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; upload(f); }} />
                   </label>
                   {draft.bg_image && <Btn disabled={busy} onClick={() => act(() => adminFetch(`/admin/live/themes/${sel}/background`, { method: 'DELETE' }, token))}>Remove</Btn>}
                 </div>

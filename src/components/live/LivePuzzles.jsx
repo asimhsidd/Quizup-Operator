@@ -83,6 +83,7 @@ function Pictures({ token, counts, onDone }) {
     setBusy(false);
   }
   async function replace(word, file) {
+    if (!file?.type?.startsWith('image/')) return setMsg(`The browser didn't pass on a picture for "${word}". Try again, or drop it on the tile.`);
     const fd = new FormData();
     fd.append('image', file);
     try { await adminUpload(`/admin/live/pictures/${encodeURIComponent(word)}`, fd, token); onDone(); setList(await adminFetch('/admin/live/pictures', {}, token)); }
@@ -106,11 +107,14 @@ function Pictures({ token, counts, onDone }) {
       {list && (
         <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-8 gap-2 max-h-[420px] overflow-y-auto">
           {list.map(p => (
-            <label key={p.word} className="flex flex-col items-center gap-1 text-[11px] cursor-pointer" title={p.error ?? 'Upload a picture of your own'}>
+            <label key={p.word} className="flex flex-col items-center gap-1 text-[11px] cursor-pointer" title={p.error ?? 'Upload or drop a picture of your own'}
+                   onDragOver={e => e.preventDefault()}
+                   onDrop={e => { e.preventDefault(); replace(p.word, e.dataTransfer?.files?.[0]); }}>
               {p.image_url ? <img src={p.image_url} alt="" className="w-16 h-16 rounded border border-gray-200 bg-white object-contain" />
                 : <span className={`w-16 h-16 rounded border border-dashed ${p.status === 'failed' ? 'border-red-400' : 'border-gray-300'}`} />}
               <span className="truncate max-w-full">{p.word} · {p.puzzles}</span>
-              <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && replace(p.word, e.target.files[0])} />
+              <input type="file" accept="image/*" className="hidden"
+                     onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; replace(p.word, f); }} />
             </label>
           ))}
         </div>
