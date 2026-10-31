@@ -32,6 +32,8 @@ export default function LiveReports({ token }) {
       {rows.map(r => {
         const c = r.content;
         const word = r.round?.kind === 'word';
+        const odd = r.round?.kind === 'odd';
+        const puzzle = word || odd; // a puzzle can be rejected; a question is handled in the Library
         return (
           <div key={`${r.event_id}-${r.round_index}`} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-2">
             <div className="flex justify-between gap-2 text-xs text-gray-500">
@@ -40,13 +42,16 @@ export default function LiveReports({ token }) {
             </div>
             {c ? (word
               ? <p className="text-sm"><b className="font-mono">{c.answer}</b> · {c.parts.map(p => p.picture ?? p.letters ?? p.op).join(' ')}{c.explain ? ` · ${c.explain}` : ''} <span className="text-xs text-gray-500">({c.status})</span></p>
-              : <p className="text-sm">{c.question_text} <b>→ {c.correct_answer}</b></p>)
+              : odd
+                ? <p className="text-sm">Odd One Out: {c.items.map((x, i) => (i === c.odd ? <b key={i}>{x}</b> : x)).reduce((a, b) => [a, ', ', b])} · the rest: {c.link}{c.reason ? ` · ${c.reason}` : ''} <span className="text-xs text-gray-500">({c.status})</span></p>
+                : <p className="text-sm">{c.question_text} <b>→ {c.correct_answer}</b>
+                    {r.round?.kind === 'tf' && <span className="text-gray-600"> · True or False showed <b>{r.round.claim}</b> ({r.round.truth})</span>}</p>)
               : <p className="text-sm text-gray-500">The round's content is gone.</p>}
             {r.reasons?.length > 0 && <ul className="text-xs text-gray-600 list-disc pl-5">{r.reasons.slice(0, 5).map((x, i) => <li key={i}>{x}</li>)}</ul>}
             {status === 'open' && (
               <div className="flex gap-2">
                 <Btn variant="success" onClick={() => settle(r, 'upheld')}>Uphold</Btn>
-                {word && c?.status !== 'rejected' && <Btn variant="danger" onClick={() => settle(r, 'upheld', true)}>Uphold and reject the puzzle</Btn>}
+                {puzzle && c?.status !== 'rejected' && <Btn variant="danger" onClick={() => settle(r, 'upheld', true)}>Uphold and reject the puzzle</Btn>}
                 <Btn onClick={() => settle(r, 'dismissed')}>Dismiss</Btn>
               </div>
             )}

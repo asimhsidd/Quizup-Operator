@@ -11,7 +11,9 @@ import LiveThemes from '../components/live/LiveThemes.jsx';
 import LivePuzzles from '../components/live/LivePuzzles.jsx';
 import LiveReports from '../components/live/LiveReports.jsx';
 
-const MODES = [['classic', 'Classic'], ['word_rush', 'Word Rush']];
+// The KWIZ Live modes (backend lib/live.js); Mixed takes turns with all the others
+const MODES = [['classic', 'Classic'], ['true_false', 'True or False'], ['odd_one_out', 'Odd One Out'], ['word_rush', 'Word Rush'], ['mixed', 'Mixed']];
+const modeName = m => MODES.find(([v]) => v === m)?.[1] ?? 'Classic';
 
 const STATUS_COLOR = {
   scheduled: 'bg-cyan-100 text-cyan-700',
@@ -179,10 +181,16 @@ function LiveEvents({ token }) {
           ))}
           <div className="col-span-2 sm:col-span-5 flex items-center gap-3">
             <Btn type="submit" variant="primary" disabled={busy}>Schedule</Btn>
-            {form.mode === 'word_rush' && (
+            {['word_rush', 'mixed'].includes(form.mode) && (
               <span className="text-xs text-gray-500">
                 Word Rush puzzles playable now: {Object.values(data.wordRushStock ?? {}).reduce((a, b) => a + b, 0)} (by difficulty {[1, 2, 3, 4, 5].map(k => `${k}: ${data.wordRushStock?.[k] ?? 0}`).join(', ')}).
                 The mode and theme are copied onto the event when it starts.
+              </span>
+            )}
+            {['odd_one_out', 'mixed'].includes(form.mode) && (
+              <span className="text-xs text-gray-500">
+                Odd One Out puzzles: {Object.values(data.oddStock ?? {}).reduce((a, b) => a + b, 0)} (by difficulty {[1, 2, 3].map(k => `${k}: ${data.oddStock?.[k] ?? 0}`).join(', ')}).
+                {form.mode === 'mixed' && ' A kind that runs short hands its turns to classic questions.'}
               </span>
             )}
           </div>
@@ -220,7 +228,7 @@ function LiveEvents({ token }) {
                       </select>
                     </div>
                   ) : (
-                    <div className="text-gray-500">{e.mode === 'word_rush' ? 'Word Rush' : 'Classic'} · {e.theme?.name ?? e.theme_name ?? 'default theme'}
+                    <div className="text-gray-500">{modeName(e.mode)} · {e.theme?.name ?? e.theme_name ?? 'default theme'}
                       {e.open_reports > 0 && <span className="ml-1 text-amber-700 font-semibold">· {e.open_reports} reports</span>}</div>
                   )}
                 </td>
