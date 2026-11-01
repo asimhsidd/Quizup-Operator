@@ -20,29 +20,17 @@ const TIER_COLOR = {
   hard:   'bg-red-100 text-red-700',
 };
 
-const REGION_FLAG = { AU: '🇦🇺', US: '🇺🇸', CA: '🇨🇦', EU: '🇪🇺' };
+const REGION_FLAG = { AU: '🇦🇺', GB: '🇬🇧', CA: '🇨🇦', NZ: '🇳🇿', IE: '🇮🇪', US: '🇺🇸', EU: '🇪🇺' };
 
-const LOCATION_OPTIONS = [
-  { region: 'AU', country: 'Australia',      city: 'Sydney' },
-  { region: 'AU', country: 'Australia',      city: 'Melbourne' },
-  { region: 'AU', country: 'Australia',      city: 'Brisbane' },
-  { region: 'AU', country: 'Australia',      city: 'Perth' },
-  { region: 'AU', country: 'Australia',      city: 'Adelaide' },
-  { region: 'US', country: 'United States',  city: 'New York' },
-  { region: 'US', country: 'United States',  city: 'Los Angeles' },
-  { region: 'US', country: 'United States',  city: 'Chicago' },
-  { region: 'US', country: 'United States',  city: 'Houston' },
-  { region: 'US', country: 'United States',  city: 'Phoenix' },
-  { region: 'CA', country: 'Canada',         city: 'Toronto' },
-  { region: 'CA', country: 'Canada',         city: 'Vancouver' },
-  { region: 'CA', country: 'Canada',         city: 'Montreal' },
-  { region: 'CA', country: 'Canada',         city: 'Calgary' },
-  { region: 'CA', country: 'Canada',         city: 'Ottawa' },
-  { region: 'EU', country: 'United Kingdom', city: 'London' },
-  { region: 'EU', country: 'Germany',        city: 'Berlin' },
-  { region: 'EU', country: 'France',         city: 'Paris' },
-  { region: 'EU', country: 'Netherlands',    city: 'Amsterdam' },
-  { region: 'EU', country: 'Spain',          city: 'Madrid' },
+// Where a new bot lives (the backend's HOME_COUNTRIES in lib/botHomes.js). Spread takes the next
+// free suburb on the list, which keeps the AU 40% · UK 24% · Canada 16% · NZ 10% · Ireland 10% split.
+const HOME_OPTIONS = [
+  { code: '',   label: 'Spread (next free home: AU 40% · UK 24% · CA 16% · NZ 10% · IE 10%)' },
+  { code: 'AU', label: '🇦🇺 Australia' },
+  { code: 'GB', label: '🇬🇧 United Kingdom' },
+  { code: 'CA', label: '🇨🇦 Canada' },
+  { code: 'NZ', label: '🇳🇿 New Zealand' },
+  { code: 'IE', label: '🇮🇪 Ireland' },
 ];
 
 function MatchHistoryRow({ bot, token, onClose }) {
@@ -146,7 +134,7 @@ function MatchHistoryRow({ bot, token, onClose }) {
 function CreateBotPanel({ token, onClose, onCreated }) {
   const [form, setForm] = useState({
     firstName: '', gender: 'male', tier: 'medium',
-    locationIdx: 0, active: true,
+    homeCountry: '', active: true,
   });
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -171,15 +159,12 @@ function CreateBotPanel({ token, onClose, onCreated }) {
     if (form.firstName.trim().length < 2) { setError('First name must be at least 2 characters'); return; }
     setSaving(true);
     try {
-      const loc = LOCATION_OPTIONS[form.locationIdx];
       const fd = new FormData();
       fd.append('avatar',          file);
       fd.append('firstName',       form.firstName.trim());
       fd.append('gender',          form.gender);
       fd.append('tier',            form.tier);
-      fd.append('locationRegion',  loc.region);
-      fd.append('locationCountry', loc.country);
-      fd.append('locationCity',    loc.city);
+      fd.append('homeCountry',     form.homeCountry);
       fd.append('active',          String(form.active));
 
       const res = await fetch(`${API}/admin/bots`, {
@@ -262,15 +247,12 @@ function CreateBotPanel({ token, onClose, onCreated }) {
 
           {/* Location */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 mb-1">Location</label>
-            <select value={form.locationIdx} onChange={e => set('locationIdx', parseInt(e.target.value))}
+            <label className="block text-xs font-bold text-gray-500 mb-1">Country</label>
+            <select value={form.homeCountry} onChange={e => set('homeCountry', e.target.value)}
               className="w-full border border-[#E0E0E0] rounded-lg px-3 py-2 text-sm text-[#1A1A2E] focus:outline-none focus:border-[#E8453C] bg-white">
-              {LOCATION_OPTIONS.map((loc, i) => (
-                <option key={i} value={i}>
-                  {REGION_FLAG[loc.region] || ''} {loc.city}, {loc.country}
-                </option>
-              ))}
+              {HOME_OPTIONS.map(o => <option key={o.code} value={o.code}>{o.label}</option>)}
             </select>
+            <p className="text-[11px] text-gray-400 mt-1">The bot gets a real suburb as soon as it's created, so it counts for clans, the map and Near you straight away.</p>
           </div>
 
           {/* Active toggle */}
