@@ -11,9 +11,7 @@ import LiveThemes from '../components/live/LiveThemes.jsx';
 import LivePuzzles from '../components/live/LivePuzzles.jsx';
 import LiveReports from '../components/live/LiveReports.jsx';
 
-// The KWIZ Live modes (backend lib/live.js); Mixed takes turns with all the others
-const MODES = [['classic', 'Classic'], ['true_false', 'True or False'], ['odd_one_out', 'Odd One Out'], ['word_rush', 'Word Rush'], ['mixed', 'Mixed']];
-const modeName = m => MODES.find(([v]) => v === m)?.[1] ?? 'Classic';
+import { RoundMix, EventMix, mixSummary, weightsOfEvent } from '../components/live/RoundMix.jsx';
 
 const STATUS_COLOR = {
   scheduled: 'bg-cyan-100 text-cyan-700',
@@ -80,7 +78,7 @@ function LiveEvents({ token }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ startsAt: '', prizeXp: '', minPlayers: '', questionCount: '', name: '', mode: 'classic', themeId: '' });
+  const [form, setForm] = useState({ startsAt: '', prizeXp: '', minPlayers: '', questionCount: '', name: '', weights: { classic: 1 }, themeId: '' });
   const [openId, setOpenId] = useState(null);
 
   async function load() {
@@ -136,7 +134,7 @@ function LiveEvents({ token }) {
               method: 'POST',
               body: {
                 startsAt: new Date(form.startsAt).toISOString(),
-                name: form.name || null, mode: form.mode, themeId: form.themeId || null,
+                name: form.name || null, weights: form.weights, themeId: form.themeId || null,
                 ...(form.prizeXp && { prizeXp: Number(form.prizeXp) }),
                 ...(form.minPlayers && { minPlayers: Number(form.minPlayers) }),
                 ...(form.questionCount && { questionCount: Number(form.questionCount) }),
@@ -149,13 +147,6 @@ function LiveEvents({ token }) {
             <input id="live-name" maxLength={60} value={form.name} placeholder="e.g. Halloween Champs"
                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                    className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-gray-900" />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600">
-            Mode
-            <select id="live-mode" value={form.mode} onChange={e => setForm(f => ({ ...f, mode: e.target.value }))}
-                    className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-gray-900">
-              {MODES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
           </label>
           <label className="flex flex-col gap-1 text-xs font-semibold text-gray-600 col-span-2 sm:col-span-2">
             Theme
@@ -179,18 +170,22 @@ function LiveEvents({ token }) {
                      className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-gray-900" />
             </label>
           ))}
+          <div className="col-span-2 sm:col-span-5 flex flex-col gap-1">
+            <span className="text-xs font-semibold text-gray-600">Round mix (weight per type)</span>
+            <RoundMix weights={form.weights} onChange={weights => setForm(f => ({ ...f, weights }))}
+                      rounds={Number(form.questionCount) || s.questionCount} />
+          </div>
           <div className="col-span-2 sm:col-span-5 flex items-center gap-3">
-            <Btn type="submit" variant="primary" disabled={busy}>Schedule</Btn>
-            {['word_rush', 'mixed'].includes(form.mode) && (
+            <Btn type="submit" variant="primary" disabled={busy || !Object.values(form.weights).some(v => v > 0)}>Schedule</Btn>
+            {(form.weights.word_rush ?? 0) > 0 && (
               <span className="text-xs text-gray-500">
                 Word Rush puzzles playable now: {Object.values(data.wordRushStock ?? {}).reduce((a, b) => a + b, 0)} (by difficulty {[1, 2, 3, 4, 5].map(k => `${k}: ${data.wordRushStock?.[k] ?? 0}`).join(', ')}).
                 The mode and theme are copied onto the event when it starts.
               </span>
             )}
-            {['odd_one_out', 'mixed'].includes(form.mode) && (
+            {(form.weights.odd_one_out ?? 0) > 0 && (
               <span className="text-xs text-gray-500">
                 Odd One Out puzzles: {Object.values(data.oddStock ?? {}).reduce((a, b) => a + b, 0)} (by difficulty {[1, 2, 3].map(k => `${k}: ${data.oddStock?.[k] ?? 0}`).join(', ')}).
-                {form.mode === 'mixed' && ' A kind that runs short hands its turns to classic questions.'}
               </span>
             )}
           </div>
@@ -215,11 +210,6 @@ function LiveEvents({ token }) {
                   <div className="font-semibold text-gray-800">{e.name ?? 'KWIZ Live'}</div>
                   {e.status === 'scheduled' ? (
                     <div className="flex gap-1 mt-1">
-                      <select value={e.mode} disabled={busy} aria-label="Mode"
-                              onChange={ev => act(() => adminFetch(`/admin/live/events/${e.id}`, { method: 'PUT', body: { mode: ev.target.value } }, token))}
-                              className="border border-gray-300 rounded px-1 py-0.5">
-                        {MODES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                      </select>
                       <select value={e.theme_id ?? ''} disabled={busy} aria-label="Theme"
                               onChange={ev => act(() => adminFetch(`/admin/live/events/${e.id}`, { method: 'PUT', body: { themeId: ev.target.value || null } }, token))}
                               className="border border-gray-300 rounded px-1 py-0.5">
@@ -227,8 +217,12 @@ function LiveEvents({ token }) {
                         {(data.themes ?? []).filter(t => !t.is_default).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                       </select>
                     </div>
+                  ) : null}
+                  {e.status === 'scheduled' ? (
+                    <EventMix event={e} rounds={e.question_count} disabled={busy}
+                              onSave={weights => act(() => adminFetch(`/admin/live/events/${e.id}`, { method: 'PUT', body: { weights } }, token))} />
                   ) : (
-                    <div className="text-gray-500">{modeName(e.mode)} · {e.theme?.name ?? e.theme_name ?? 'default theme'}
+                    <div className="text-gray-500">{mixSummary(weightsOfEvent(e), e.question_count)} · {e.theme?.name ?? e.theme_name ?? 'default theme'}
                       {e.open_reports > 0 && <span className="ml-1 text-amber-700 font-semibold">· {e.open_reports} reports</span>}</div>
                   )}
                 </td>
