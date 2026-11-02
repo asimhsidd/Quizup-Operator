@@ -25,7 +25,7 @@ export function weightsOfEvent(e) {
 
 /** Rounds per type for n rounds, as the backend plans them (largest remainder, ≥1 each). */
 export function roundCounts(weights, n) {
-  const entries = Object.entries(weights).filter(([, w]) => w > 0);
+  const entries = MIX_TYPES.map(([m]) => [m, Number(weights[m]) || 0]).filter(([, w]) => w > 0); // in the editor's order
   const total = entries.reduce((a, [, w]) => a + w, 0);
   if (!total || n <= 0) return [];
   const xs = entries.map(([m, w]) => ({ m, exact: (n * w) / total, c: Math.floor((n * w) / total) }));
