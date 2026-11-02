@@ -33,7 +33,9 @@ export default function LiveReports({ token }) {
         const c = r.content;
         const word = r.round?.kind === 'word';
         const odd = r.round?.kind === 'odd';
-        const puzzle = word || odd; // a puzzle can be rejected; a question is handled in the Library
+        const who = r.round?.kind === 'who';
+        const map = r.round?.kind === 'map';
+        const puzzle = word || odd || who || map; // a puzzle can be rejected; a question is handled in the Library
         return (
           <div key={`${r.event_id}-${r.round_index}`} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-2">
             <div className="flex justify-between gap-2 text-xs text-gray-500">
@@ -42,6 +44,10 @@ export default function LiveReports({ token }) {
             </div>
             {c ? (word
               ? <p className="text-sm"><b className="font-mono">{c.answer}</b> · {c.parts.map(p => p.picture ?? p.letters ?? p.op).join(' ')}{c.explain ? ` · ${c.explain}` : ''} <span className="text-xs text-gray-500">({c.status})</span></p>
+              : who
+                ? <p className="text-sm">Who am I: {c.clues.join(' / ')} <b>→ {c.answer}</b> · wrong: {c.wrong.join(', ')} <span className="text-xs text-gray-500">({c.status})</span></p>
+              : map
+                ? <p className="text-sm">Map tap: <b>{c.name}{c.country ? `, ${c.country}` : ''}</b> ({c.kind}, {Number(c.lat).toFixed(2)}, {Number(c.lng).toFixed(2)}, counts within {c.radius_km} km{c.kind === 'country' ? ' of its outline' : ''}) <span className="text-xs text-gray-500">({c.status})</span></p>
               : odd
                 ? <p className="text-sm">Odd One Out: {c.items.map((x, i) => (i === c.odd ? <b key={i}>{x}</b> : x)).reduce((a, b) => [a, ', ', b])} · the rest: {c.link}{c.reason ? ` · ${c.reason}` : ''} <span className="text-xs text-gray-500">({c.status})</span></p>
                 : <p className="text-sm">{c.question_text} <b>→ {c.correct_answer}</b>

@@ -183,6 +183,16 @@ function LiveEvents({ token }) {
                 The mode and theme are copied onto the event when it starts.
               </span>
             )}
+            {(form.weights.who_am_i ?? 0) > 0 && (
+              <span className="text-xs text-gray-500">
+                Who am I puzzles: {Object.values(data.whoStock ?? {}).reduce((a, b) => a + b, 0)} (by difficulty {[1, 2, 3].map(k => `${k}: ${data.whoStock?.[k] ?? 0}`).join(', ')}).
+              </span>
+            )}
+            {(form.weights.map_tap ?? 0) > 0 && (
+              <span className="text-xs text-gray-500">
+                Map tap places: {Object.values(data.mapStock ?? {}).reduce((a, b) => a + b, 0)} (by difficulty {[1, 2, 3].map(k => `${k}: ${data.mapStock?.[k] ?? 0}`).join(', ')}).
+              </span>
+            )}
             {(form.weights.odd_one_out ?? 0) > 0 && (
               <span className="text-xs text-gray-500">
                 Odd One Out puzzles: {Object.values(data.oddStock ?? {}).reduce((a, b) => a + b, 0)} (by difficulty {[1, 2, 3].map(k => `${k}: ${data.oddStock?.[k] ?? 0}`).join(', ')}).

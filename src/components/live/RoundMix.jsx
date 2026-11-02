@@ -11,6 +11,8 @@ export const MIX_TYPES = [
   ['odd_one_out', 'Odd One Out'],
   ['word_rush', 'Word Rush'],
   ['higher_lower', 'Higher or Lower'],
+  ['who_am_i', 'Who am I'],
+  ['map_tap', 'Map tap'],
 ];
 const label = m => MIX_TYPES.find(([v]) => v === m)?.[1] ?? m;
 
@@ -59,7 +61,7 @@ export function RoundMix({ weights, onChange, rounds, compact = false }) {
   }
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
         {MIX_TYPES.map(([m, l]) => (
           <label key={m} className="flex flex-col gap-0.5 text-xs font-semibold text-gray-600">
             {l}
