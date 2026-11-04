@@ -463,7 +463,7 @@ export default function BotsTab({ token }) {
   ];
 
   const SETTINGS_META = [
-    { key: 'matchmaking_bot_delay_ms',               label: 'Matchmaking bot delay',   unit: 's', isMs: true, hint: 'Wait before injecting a bot when no real player is found (default 8s)' },
+    { key: 'matchmaking_bot_delay_ms',               label: 'Matchmaking bot delay',   unit: 's', isMs: true, hint: 'Wait before a bot joins when no real player is found, plus up to 3s at random (default 8s)' },
     { key: 'scheduler_min_delay_ms',                 label: 'Tick interval min',       unit: 's', isMs: true, hint: 'Minimum time between global bot activity ticks (default 60s)' },
     { key: 'scheduler_max_delay_ms',                 label: 'Tick interval max',       unit: 's', isMs: true, hint: 'Maximum time between global bot activity ticks (default 180s = 3 min)' },
     { key: 'bot_cooldown_ms',                        label: 'Per-bot cooldown',        unit: 's', isMs: true, hint: 'How long before the same bot can act again (default 900s = 15 min)' },
