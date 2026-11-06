@@ -315,19 +315,25 @@ function QueueHealth({ token }) {
       </div>
       <div className="text-xs text-gray-400 mb-4">
         Who players met in random matches. &ldquo;Ready for fewer bots&rdquo; marks a topic where at least {Math.round(READY_SHARE * 100)}% of
-        {' '}{READY_MIN_MATCHES}+ matches were against a person.
+        {' '}{READY_MIN_MATCHES}+ matches were against a person. Search times leave out lifelines-first
+        matches (Lucky Spin, the live board, a first match), where the wait is the player choosing lifelines:
+        that&rsquo;s the &ldquo;Picking lifelines first&rdquo; figure. Time to first question runs from joining to round 1.
+        Abandoned counts searches left, lifeline screens never tapped and loadouts cancelled, out of those plus matches played.
       </div>
       {!data ? <Spinner /> : !t?.matches ? (
         <div className="text-sm text-gray-400 py-4">No random matches in this period.</div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             {[
               ['Matches', t.matches],
               ['Against a person', pct(t.vs_human, t.matches)],
               ['Against a bot', pct(t.vs_bot + t.vs_seeded, t.matches)],
-              ['Median wait', secs(t.median_wait_ms)],
-              ['Slowest 10% wait', secs(t.p90_wait_ms)],
+              ['Median search wait', secs(t.median_wait_ms)],
+              ['Slowest 10% search', secs(t.p90_wait_ms)],
+              ['Time to first question', secs(t.median_first_question_ms)],
+              ['Abandoned', pct(t.abandoned, t.abandoned + t.matches)],
+              ['Picking lifelines first', secs(t.median_pick_ms)],
             ].map(([label, value]) => (
               <div key={label} className="bg-gray-50 rounded-lg px-3 py-2">
                 <div className="text-xs text-gray-400">{label}</div>
@@ -354,6 +360,7 @@ function QueueHealth({ token }) {
                   <th className="px-3 py-2">vs bot after wait</th>
                   <th className="px-3 py-2">vs waiting bot</th>
                   <th className="px-3 py-2">Median wait</th>
+                  <th className="px-3 py-2">Abandoned</th>
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
@@ -369,6 +376,7 @@ function QueueHealth({ token }) {
                       <td className="px-3 py-2 text-gray-500">{pct(r.vs_bot, r.matches)}</td>
                       <td className="px-3 py-2 text-gray-500">{pct(r.vs_seeded, r.matches)}</td>
                       <td className="px-3 py-2 text-gray-500">{secs(r.median_wait_ms)}</td>
+                      <td className="px-3 py-2 text-gray-500">{pct(r.abandoned, r.abandoned + r.matches)}</td>
                       <td className="px-3 py-2">
                         {ready && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Ready for fewer bots</span>}
                       </td>
