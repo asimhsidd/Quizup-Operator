@@ -318,7 +318,8 @@ function QueueHealth({ token }) {
         {' '}{READY_MIN_MATCHES}+ matches were against a person. Search times leave out lifelines-first
         matches (Lucky Spin, the live board, a first match), where the wait is the player choosing lifelines:
         that&rsquo;s the &ldquo;Picking lifelines first&rdquo; figure. Time to first question runs from joining to round 1.
-        Abandoned counts searches left, lifeline screens never tapped and loadouts cancelled, out of those plus matches played.
+        Abandoned counts searches left, lifeline screens never tapped and loadouts the player left or let run out, out of those plus
+        matches played. Being left behind by the opponent or a server failure doesn&rsquo;t count.
       </div>
       {!data ? <Spinner /> : !t?.matches ? (
         <div className="text-sm text-gray-400 py-4">No random matches in this period.</div>
