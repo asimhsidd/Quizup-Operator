@@ -19,6 +19,7 @@ const GROUP_HOME = {
   'Comms':              { tab: 'comms' },
   'System':             { tab: 'system' },
   'AI models':          { tab: 'ai-logs' },
+  'Agent':              { tab: 'agent' },
 };
 
 // Single keys that belong somewhere other than their group's home
@@ -29,6 +30,11 @@ const KEY_HOME = {
   nearby_bot_slots:      { tab: 'bots' },
   crown_min_players:     { tab: 'world', view: 'crowns' },
   crown_min_xp:          { tab: 'world', view: 'crowns' },
+  // The agent's model sits with the other models, but its price and model are the agent's business too
+  ai_agent_model:        { tab: 'agent' },
+  ai_agent_provider:     { tab: 'agent' },
+  ai_agent_input_usd_per_m:  { tab: 'agent' },
+  ai_agent_output_usd_per_m: { tab: 'agent' },
 };
 
 /** { tab, view? } for a config entry from GET /admin/config */

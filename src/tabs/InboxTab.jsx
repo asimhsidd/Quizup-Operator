@@ -24,6 +24,11 @@ const KINDS = {
   'error.regressed':      'Error is back (System)',
   'error.spike':          'Error spike',
   'ai.budget':            'AI budget',
+  'order.flagged':        'Order It puzzle retired',
+  'agent.proposal':       'Agent asks',
+  'agent.action':         'Agent did',
+  'agent.dry_run':        'Agent would (dry-run)',
+  'agent.failed':         'Agent couldn\'t',
 };
 
 const SEVERITY = {
@@ -55,6 +60,36 @@ function EventCard({ ev, token, onChanged }) {
       await adminFetch(`/admin/restrictions/${ev.detail.restrictionId}/lift`, { method: 'POST', body: { note: why } }, token);
       const { event } = await adminFetch(`/admin/ops-events/${ev.id}`, { method: 'POST', body: { status: 'resolved', note: `Lifted: ${why}` } }, token);
       onChanged(event);
+    } catch (err) {
+      addToast(err.message, 'error');
+    }
+    setBusy(false);
+  }
+
+  // The agent's proposals and actions can be settled from here; the Agent tab has the rest
+  async function decide(approve) {
+    const note = approve ? '' : prompt('Decline: a note for the record (optional)');
+    if (note === null) return;
+    setBusy(true);
+    try {
+      await adminFetch(`/admin/agent/proposals/${ev.detail.proposalId}/decision`, { method: 'POST', body: { approve, ...(note && { note }) } }, token);
+      addToast(approve ? 'Approved: the agent carries it out within a minute' : 'Declined', 'success');
+      if (approve) {
+        const { event } = await adminFetch(`/admin/ops-events/${ev.id}`, { method: 'POST', body: { status: 'acked', note: 'Approved' } }, token);
+        onChanged(event);
+      }
+    } catch (err) {
+      addToast(err.message, 'error');
+    }
+    setBusy(false);
+  }
+
+  async function undoAgent() {
+    if (!confirm('Undo what the agent did?')) return;
+    setBusy(true);
+    try {
+      await adminFetch(`/admin/agent/actions/${ev.detail.actionId}/undo`, { method: 'POST' }, token);
+      addToast('Undone', 'success');
     } catch (err) {
       addToast(err.message, 'error');
     }
@@ -113,6 +148,11 @@ function EventCard({ ev, token, onChanged }) {
           />
           {ev.subject_type === 'user' && ev.subject_id && <Btn variant="primary" onClick={() => openPlayer(ev.subject_id)}>Open player</Btn>}
           {ev.kind === 'safety.agent_action' && ev.detail?.restrictionId && <Btn variant="danger" disabled={busy} onClick={liftAgentAction}>Lift it</Btn>}
+          {ev.kind === 'agent.proposal' && ev.status === 'open' && ev.detail?.proposalId && <>
+            <Btn variant="success" disabled={busy} onClick={() => decide(true)}>Approve</Btn>
+            <Btn variant="danger" disabled={busy} onClick={() => decide(false)}>Decline</Btn>
+          </>}
+          {ev.kind === 'agent.action' && ev.detail?.undo && <Btn variant="danger" disabled={busy} onClick={undoAgent}>Undo</Btn>}
           {ev.status === 'open' && <Btn variant="ghost" disabled={busy} onClick={() => setStatus('acked')}>Acknowledge</Btn>}
           <Btn variant="success" disabled={busy} onClick={() => setStatus('resolved')}>Resolve</Btn>
         </div>

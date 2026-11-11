@@ -24,6 +24,7 @@ import {
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
+  BrainCircuit,
 } from 'lucide-react';
 import { adminFetch, Spinner, SESSION_EXPIRED } from './lib/adminUtils.jsx';
 import LoginGate from './components/LoginGate.jsx';
@@ -47,10 +48,12 @@ const SafetyTab     = lazy(() => import('./tabs/SafetyTab.jsx'));
 const EconomyTab    = lazy(() => import('./tabs/EconomyTab.jsx'));
 const GameWorldTab  = lazy(() => import('./tabs/GameWorldTab.jsx'));
 const CommsTab      = lazy(() => import('./tabs/CommsTab.jsx'));
+const AgentTab      = lazy(() => import('./tabs/AgentTab.jsx'));
 
 // ── Tab definitions ────────────────────────────────────────────────────────────
 const TABS = [
   { id: 'inbox',      label: 'Inbox',      subtitle: 'What needs attention, live', Icon: Inbox },
+  { id: 'agent',      label: 'Agent',      subtitle: 'The operating agent: switches, approvals, activity and playbooks', Icon: BrainCircuit },
   { id: 'analytics',  label: 'Overview',   subtitle: 'Game health and player activity', Icon: BarChart2 },
   { id: 'users',      label: 'Users',      subtitle: 'Players, profiles and access', Icon: Users },
   { id: 'library',    label: 'Library',    subtitle: 'Categories, topics, questions and answers', Icon: Library },
@@ -71,7 +74,7 @@ const TABS = [
 const VIEW_LABELS = { store: 'Store & pricing', clans: 'Clans', missions: 'Missions', crowns: 'Crowns', discover: 'Discover' };
 
 const NAV_GROUPS = [
-  { label: 'Command', ids: ['inbox', 'analytics'] },
+  { label: 'Command', ids: ['inbox', 'agent', 'analytics'] },
   { label: 'Players & safety', ids: ['users', 'safety', 'comms'] },
   { label: 'Content', ids: ['library', 'ai-logs', 'bots'] },
   { label: 'Game', ids: ['rules', 'live', 'world'] },
@@ -385,6 +388,7 @@ export default function App() {
             {visitedTabs.has('rules')      && <div style={{ display: activeTab === 'rules'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><GameRulesTab  token={token} /></Suspense></div>}
             {visitedTabs.has('bots')       && <div style={{ display: activeTab === 'bots'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><BotsTab       token={token} /></Suspense></div>}
             {visitedTabs.has('live')       && <div style={{ display: activeTab === 'live'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><LiveTab       token={token} /></Suspense></div>}
+            {visitedTabs.has('agent')      && <div style={{ display: activeTab === 'agent'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><AgentTab      token={token} /></Suspense></div>}
           </div>
         </main>
       </div>
