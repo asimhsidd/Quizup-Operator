@@ -7,6 +7,7 @@ import { adminFetch, Badge, Btn, Spinner, fmtWhen, timeAgo } from '../lib/adminU
 import { useToastStore } from '../lib/toastStore';
 import { usePlayerStore } from '../store/playerStore';
 import WalletPanel from './WalletPanel.jsx';
+import PlayerBehaviour from './PlayerBehaviour.jsx';
 
 const KIND_BADGE = {
   mute:    'bg-amber-100 text-amber-800',
@@ -139,6 +140,7 @@ export default function PlayerDrawer({ token }) {
   const [error, setError] = useState('');
   const [rename, setRename] = useState('');
   const [showWallet, setShowWallet] = useState(false);
+  const [showBehaviour, setShowBehaviour] = useState(false);
   const { addToast } = useToastStore();
 
   async function load(id = playerId) {
@@ -150,6 +152,7 @@ export default function PlayerDrawer({ token }) {
   useEffect(() => {
     setData(null);
     setShowWallet(false);
+    setShowBehaviour(false);
     setRename('');
     if (playerId) load(playerId);
   }, [playerId]);
@@ -274,6 +277,12 @@ export default function PlayerDrawer({ token }) {
                 }}>Remove picture</Btn>
               </div>
             </Section>
+
+            {!u.is_bot && (
+              <Section title="Behaviour" right={<Btn variant="ghost" onClick={() => setShowBehaviour(s => !s)}>{showBehaviour ? 'Hide' : 'Show'}</Btn>}>
+                {showBehaviour ? <PlayerBehaviour userId={u.id} token={token} /> : <p className="text-sm text-gray-400">Favourite topics by time of day, habits, rhythm and skill.</p>}
+              </Section>
+            )}
 
             <Section title="Recent games">
               {data.recentGames.length === 0 ? <p className="text-sm text-gray-400">None.</p> : (
