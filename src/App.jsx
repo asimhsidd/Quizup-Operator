@@ -25,6 +25,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   BrainCircuit,
+  DoorOpen,
 } from 'lucide-react';
 import { adminFetch, Spinner, SESSION_EXPIRED } from './lib/adminUtils.jsx';
 import LoginGate from './components/LoginGate.jsx';
@@ -40,6 +41,7 @@ const AILogsTab     = lazy(() => import('./tabs/AILogsTab.jsx'));
 const GameRulesTab  = lazy(() => import('./tabs/GameRulesTab.jsx'));
 const BotsTab       = lazy(() => import('./tabs/BotsTab.jsx'));
 const LiveTab       = lazy(() => import('./tabs/LiveTab.jsx'));
+const RoomsTab      = lazy(() => import('./tabs/RoomsTab.jsx'));
 const InboxTab      = lazy(() => import('./tabs/InboxTab.jsx'));
 const AuditTab      = lazy(() => import('./tabs/AuditTab.jsx'));
 const SystemTab     = lazy(() => import('./tabs/SystemTab.jsx'));
@@ -62,6 +64,7 @@ const TABS = [
   { id: 'safety',     label: 'Safety',     subtitle: 'Reports, moderation queues and question quality', Icon: ShieldAlert },
   { id: 'bots',       label: 'Bots',       subtitle: 'Synthetic players and behaviour', Icon: Gamepad2 },
   { id: 'live',       label: 'KWIZ Live',  subtitle: 'Events, schedules and prizes', Icon: Radio },
+  { id: 'rooms',      label: 'Rooms',      subtitle: 'Private rooms: what they earn, the rooms, and their settings', Icon: DoorOpen },
   { id: 'world',      label: 'Game world', subtitle: 'Clans, missions, crowns, rivals and Discover', Icon: Globe2 },
   { id: 'comms',      label: 'Comms',      subtitle: 'Push campaigns and the launch waitlist', Icon: Megaphone },
   { id: 'economy',    label: 'Economy',    subtitle: 'Coins, purchases, KWIZ+, ads, the store and its pricing', Icon: Coins },
@@ -77,7 +80,7 @@ const NAV_GROUPS = [
   { label: 'Command', ids: ['inbox', 'agent', 'analytics'] },
   { label: 'Players & safety', ids: ['users', 'safety', 'comms'] },
   { label: 'Content', ids: ['library', 'ai-logs', 'bots'] },
-  { label: 'Game', ids: ['rules', 'live', 'world'] },
+  { label: 'Game', ids: ['rules', 'live', 'rooms', 'world'] },
   { label: 'Money', ids: ['economy'] },
   { label: 'Platform', ids: ['system', 'audit', 'team'] },
 ];
@@ -388,6 +391,7 @@ export default function App() {
             {visitedTabs.has('rules')      && <div style={{ display: activeTab === 'rules'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><GameRulesTab  token={token} /></Suspense></div>}
             {visitedTabs.has('bots')       && <div style={{ display: activeTab === 'bots'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><BotsTab       token={token} /></Suspense></div>}
             {visitedTabs.has('live')       && <div style={{ display: activeTab === 'live'       ? '' : 'none' }}><Suspense fallback={<Spinner />}><LiveTab       token={token} /></Suspense></div>}
+            {visitedTabs.has('rooms')      && <div style={{ display: activeTab === 'rooms'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><RoomsTab      token={token} /></Suspense></div>}
             {visitedTabs.has('agent')      && <div style={{ display: activeTab === 'agent'      ? '' : 'none' }}><Suspense fallback={<Spinner />}><AgentTab      token={token} /></Suspense></div>}
           </div>
         </main>

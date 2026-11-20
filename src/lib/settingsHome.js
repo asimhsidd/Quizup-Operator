@@ -11,6 +11,7 @@ const GROUP_HOME = {
   'KWIZ+':              { tab: 'economy', view: 'store' },
   'Store':              { tab: 'economy', view: 'store' },
   'KWIZ Live':          { tab: 'live' },
+  'Rooms':              { tab: 'rooms' },
   'Missions':           { tab: 'world', view: 'missions' },
   'Clans & crowns':     { tab: 'world', view: 'clans' },
   'Social & discovery': { tab: 'world', view: 'discover' },
