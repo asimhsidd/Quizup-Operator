@@ -6,7 +6,7 @@ import { adminFetch, Badge, Btn, Spinner, fmtWhen, timeAgo } from '../../lib/adm
 import { useToastStore } from '../../lib/toastStore';
 import { socket } from '../../lib/socket';
 import { Pills, StatCard, Table } from '../Panels.jsx';
-import { CategoryPicker, HealthBadge, SourceBadge } from './common.jsx';
+import { CategoryPicker, HealthBadge, SourceBadge, TIERS, TierBadge } from './common.jsx';
 import QuestionList from './QuestionList.jsx';
 import { useValidation } from './useValidation.js';
 
@@ -128,11 +128,29 @@ export default function TopicPane({ token, topicId, tree, onSelect, onChanged })
           )}
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <SourceBadge source={t.source} />
+            <TierBadge tier={t.tier} sensitive={t.is_sensitive} />
             <HealthBadge health={t.health} />
             <Badge color={t.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}>{t.is_active ? 'On' : 'Off'}</Badge>
             <span className="text-xs text-gray-400">{n(t.question_count)} questions · {n(t.games_played)} games</span>
           </div>
         </div>
+      </div>
+
+      {/* How the game uses it: the tier, and the sensitive flag that overrides it */}
+      <div className="flex flex-col gap-1.5 rounded-xl border border-[#E0E0E0] bg-white px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wide text-gray-500">Tier</span>
+          <Pills options={Object.entries(TIERS).map(([k, x]) => [k, x.label])} value={t.tier}
+                 onChange={tier => tier !== t.tier && act(() => put({ tier }), `${t.name} is ${TIERS[tier].label.toLowerCase()}`)} />
+          <label className="ml-auto flex items-center gap-1.5 text-sm text-[#1A1A2E]">
+            <input type="checkbox" checked={!!t.is_sensitive}
+                   onChange={e => act(() => put({ is_sensitive: e.target.checked }), e.target.checked ? `${t.name} is marked sensitive` : `${t.name} is not sensitive`)} />
+            Sensitive
+          </label>
+        </div>
+        <p className="text-xs text-gray-500">
+          {t.is_sensitive ? 'Sensitive: never picked automatically, whatever the tier. Players can still search for it and play it.' : TIERS[t.tier]?.hint}
+        </p>
       </div>
 
       {t.is_assorted && (

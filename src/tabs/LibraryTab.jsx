@@ -21,7 +21,7 @@ export default function LibraryTab({ token }) {
   const setPath = useNavStore(s => s.setPath);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
-  const [filters, setFilters] = useState({ health: 'attention', source: '', active: '' });
+  const [filters, setFilters] = useState({ health: 'attention', source: '', active: '', tier: '', sensitive: '' });
   const [version, setVersion] = useState(0);
   const lastPath = useRef([]);
   const timer = useRef(null);
@@ -70,7 +70,7 @@ export default function LibraryTab({ token }) {
             <span className="flex-1">
               Showing topics {[FILTER_LABELS[filters.health], filters.source && `from ${filters.source}`, filters.active && `switched ${filters.active}`].filter(Boolean).join(', ')}
             </span>
-            <button type="button" onClick={() => setFilters({ health: '', source: '', active: '' })}
+            <button type="button" onClick={() => setFilters({ health: '', source: '', active: '', tier: '', sensitive: '' })}
                     className="flex items-center gap-1 font-semibold text-[#E8453C] hover:underline"><X size={12} /> Show all</button>
           </div>
         )}

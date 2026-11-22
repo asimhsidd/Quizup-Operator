@@ -20,6 +20,24 @@ export const SOURCES = {
   system: { label: 'Assorted',    color: 'bg-indigo-100 text-indigo-700' },
 };
 
+// Which topics the game picks on its own (Quizup lib/topicPick.js, migration 101). Flagship and
+// core are picked automatically (quick match, queue seeding, bot challenges, Live, Lucky Spin, the
+// popular lists); bots' favourites come from flagship. Niche topics are searchable and playable on
+// purpose only. A sensitive topic is never picked automatically, whatever its tier.
+export const TIERS = {
+  flagship: { label: 'Flagship', color: 'bg-yellow-100 text-yellow-800', hint: 'Picked automatically; bots\' favourite topics come from these' },
+  core:     { label: 'Core',     color: 'bg-blue-100 text-blue-700',     hint: 'Picked automatically: quick match, queue seeding, bot challenges, Live, Lucky Spin, popular lists' },
+  niche:    { label: 'Niche',    color: 'bg-gray-100 text-gray-600',     hint: 'Search and browse only: never picked automatically' },
+};
+
+export function TierBadge({ tier, sensitive }) {
+  const t = TIERS[tier];
+  return <>
+    {t && <Badge color={t.color}>{t.label}</Badge>}
+    {sensitive && <Badge color="bg-rose-100 text-rose-700">Sensitive</Badge>}
+  </>;
+}
+
 export function HealthBadge({ health }) {
   const h = HEALTH[health];
   return h ? <Badge color={h.color}>{h.label}</Badge> : null;

@@ -1,11 +1,11 @@
 // The Library's topics table, scoped to the selected category (or all of them): sortable,
-// filtered by health, source and on/off, with bulk select to top up, regenerate, switch on
-// or off, or move. The filters are shared with the tree (LibraryTab owns them).
+// filtered by health, source, tier, sensitive and on/off, with bulk select to top up, regenerate,
+// switch on or off, move, set the tier or mark sensitive. The filters are shared with the tree (LibraryTab owns them).
 import { useEffect, useRef, useState } from 'react';
 import { adminFetch, Badge, Btn, Paginator, Spinner } from '../../lib/adminUtils.jsx';
 import { useToastStore } from '../../lib/toastStore';
 import { Pills } from '../Panels.jsx';
-import { CategoryPicker, HealthBadge, SourceBadge, SOURCES } from './common.jsx';
+import { CategoryPicker, HealthBadge, SourceBadge, SOURCES, TIERS, TierBadge } from './common.jsx';
 
 const LIMIT = 50;
 const HEALTH_FILTERS = [['', 'All'], ['attention', 'Needs attention'], ['critical', 'Critical'], ['pending', 'Pending'], ['low', 'Low'], ['healthy', 'Healthy'], ['assorted', 'Assorted']];
@@ -33,12 +33,12 @@ export default function TopicTable({ token, category, scopedToSub, roots, filter
     const qs = new URLSearchParams({ sort: sort.key, dir: sort.dir, limit: LIMIT, offset: p * LIMIT });
     if (category) qs.set('category', category);
     if (term.trim()) qs.set('q', term.trim());
-    for (const k of ['health', 'source', 'active']) if (filters[k]) qs.set(k, filters[k]);
+    for (const k of ['health', 'source', 'active', 'tier', 'sensitive']) if (filters[k]) qs.set(k, filters[k]);
     try { setData(await adminFetch(`/admin/library/topics?${qs}`, {}, token)); }
     catch (err) { addToast(err.message, 'error'); setData({ topics: [], total: 0 }); }
   }
 
-  useEffect(() => { setPage(0); setPicked(new Set()); load(0); }, [category, sort, filters.health, filters.source, filters.active]);
+  useEffect(() => { setPage(0); setPicked(new Set()); load(0); }, [category, sort, filters.health, filters.source, filters.active, filters.tier, filters.sensitive]);
   useEffect(() => { if (version) load(); }, [version]);
 
   function onSearch(v) {
@@ -59,7 +59,7 @@ export default function TopicTable({ token, category, scopedToSub, roots, filter
 
   async function bulk(action, categoryId) {
     const ids = [...picked];
-    const label = { on: 'Switch on', off: 'Switch off', move: 'Move', generate: 'Top up', regenerate: 'Regenerate' }[action];
+    const label = { on: 'Switch on', off: 'Switch off', move: 'Move', generate: 'Top up', regenerate: 'Regenerate', flagship: 'Flagship', core: 'Core', niche: 'Niche', sensitive: 'Sensitive', not_sensitive: 'Not sensitive' }[action];
     if (action === 'regenerate' && !confirm(`Regenerate ${ids.length} topic${ids.length === 1 ? '' : 's'}? Their questions are deleted and a fresh set is generated.`)) return;
     if (action === 'off' && !confirm(`Switch off ${ids.length} topic${ids.length === 1 ? '' : 's'}? Players stop seeing them.`)) return;
     setBusy(true);
@@ -94,6 +94,15 @@ export default function TopicTable({ token, category, scopedToSub, roots, filter
           <option value="on">On</option>
           <option value="off">Off</option>
         </select>
+        <select value={filters.tier ?? ''} onChange={e => setFilters(f => ({ ...f, tier: e.target.value }))}
+                className="rounded-lg border border-[#E0E0E0] bg-white px-2 py-1.5 text-sm">
+          <option value="">Any tier</option>
+          {Object.entries(TIERS).map(([k, t]) => <option key={k} value={k}>{t.label}</option>)}
+        </select>
+        <label className="flex items-center gap-1.5 text-sm text-gray-600">
+          <input type="checkbox" checked={filters.sensitive === 'yes'} onChange={e => setFilters(f => ({ ...f, sensitive: e.target.checked ? 'yes' : '' }))} />
+          Sensitive only
+        </label>
         <span className="text-xs text-gray-400">{data ? `${data.total.toLocaleString()} topic${data.total === 1 ? '' : 's'}` : ''}</span>
       </div>
 
@@ -105,6 +114,13 @@ export default function TopicTable({ token, category, scopedToSub, roots, filter
           <Btn variant="success" disabled={busy} onClick={() => bulk('on')}>Switch on</Btn>
           <Btn variant="danger" disabled={busy} onClick={() => bulk('off')}>Switch off</Btn>
           <CategoryPicker roots={roots} value="" onChange={id => bulk('move', id === 'none' ? null : id)} allowNone />
+          <select value="" onChange={e => e.target.value && bulk(e.target.value)} disabled={busy}
+                  className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus:border-[#E8453C]">
+            <option value="" disabled>Set tier…</option>
+            {Object.entries(TIERS).map(([k, t]) => <option key={k} value={k}>{t.label}</option>)}
+            <option value="sensitive">Mark sensitive</option>
+            <option value="not_sensitive">Not sensitive</option>
+          </select>
           <button type="button" onClick={() => setPicked(new Set())} className="ml-auto text-xs font-semibold text-gray-500 hover:text-gray-800">Clear</button>
         </div>
       )}
@@ -136,6 +152,7 @@ export default function TopicTable({ token, category, scopedToSub, roots, filter
                     <span>{t.icon}</span>
                     <span className="font-semibold text-[#1A1A2E]">{t.name}</span>
                     <SourceBadge source={t.source} />
+                    <TierBadge tier={t.tier} sensitive={t.is_sensitive} />
                     {!t.is_active && <Badge color="bg-gray-200 text-gray-600">off</Badge>}
                   </div>
                 </td>
