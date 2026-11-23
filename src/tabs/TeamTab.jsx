@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { adminFetch, Badge, Btn, Spinner, fmtWhen, timeAgo } from '../lib/adminUtils.jsx';
 import { useToastStore } from '../lib/toastStore';
+import PhoneWidget from '../components/PhoneWidget.jsx';
 
 const ROLE_BADGE = {
   owner:     'bg-gray-900 text-white',
@@ -169,6 +170,8 @@ export default function TeamTab({ token, me }) {
           {admins.length === 0 && <p className="py-8 text-center text-gray-400">Nobody yet. Add your own Google email first, then sign in with it.</p>}
         </div>
       )}
+
+      <PhoneWidget token={token} />
     </div>
   );
 }
